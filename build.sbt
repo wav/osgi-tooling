@@ -1,4 +1,4 @@
-import wav.devtools.sbt.karaf.{Properties => props}
+import wav.devtools.sbt.karaf.{Properties => props, Dependencies => deps}
 
 organization in ThisBuild := props.org
 
@@ -6,16 +6,17 @@ name := "osgitools"
 
 version in ThisBuild := props.version
 
-lazy val util = project
+lazy val `sbt-karaf-packaging` = project
 
-lazy val `karaf-management` = project
+lazy val `karaf-mbean-wrapper` = project
+  .settings(
+    libraryDependencies ++= deps.Karaf.common)
 
 lazy val `sbt-karaf` = project
-	.settings(
-		unmanagedSourceDirectories in Compile +=
-        	(sourceDirectory in Compile in `util`).value,
-		unmanagedSourceDirectories in Compile +=
-        	(sourceDirectory in Compile in `karaf-management`).value)
+  .settings(
+    unmanagedSourceDirectories in Compile ++= Seq(
+      (sourceDirectory in Compile in `sbt-karaf-packaging`).value,
+      (sourceDirectory in Compile in `karaf-mbean-wrapper`).value))
 
 scalaVersion in ThisBuild := "2.11.6"
 

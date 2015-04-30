@@ -16,4 +16,6 @@ publishArtifact in Compile := true
 
 publishArtifact in Test := false
 
-libraryDependencies ++= (deps.Karaf.common :+ deps.commonsLang)
+libraryDependencies ++= Seq(
+	deps.commonsLang,
+	deps.slf4j)
