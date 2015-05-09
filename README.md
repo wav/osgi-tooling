@@ -18,7 +18,7 @@ Clone this repository and run `sbt publish-local`. Afterwards you'll be able to 
 
 Provides `SbtPackagingKaraf.featuresSettings` (by default) which is for creating a features.xml artifact
 
-View the available settings in [SbtPackagingKaraf.scala](sbt-karafpackaging/src/main/scala/wav/devtools/sbt/karaf/packaging/SbtKarafPackaging.scala).
+View the available settings in [SbtKarafPackaging.scala](sbt-karaf-packaging/src/main/scala/wav/devtools/sbt/karaf/packaging/SbtKarafPackaging.scala).
 
 #### Usage
 
