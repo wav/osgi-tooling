@@ -18,9 +18,9 @@ lazy val `sbt-karaf` = project
       (sourceDirectory in Compile in `sbt-karaf-packaging`).value,
       (sourceDirectory in Compile in `karaf-mbean-wrapper`).value))
 
-scalaVersion in ThisBuild := "2.11.6"
+scalaVersion in ThisBuild := "2.11.7"
 
-crossScalaVersions in ThisBuild := Seq("2.10.5", "2.11.6")
+crossScalaVersions in ThisBuild := Seq("2.10.5", "2.11.7")
 
 resolvers in ThisBuild ++= Seq(
   Resolver.sbtPluginRepo("releases"),

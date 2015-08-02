@@ -52,7 +52,7 @@ object Dependencies {
 
   object Karaf {
 
-    val Version = "4.0.0.M2"
+    val Version = "4.0.0"
 
     val `package` = (("org.apache.karaf" % "apache-karaf" % Version)
       .artifacts(Artifact("apache-karaf", `type` = "tar.gz", extension = "tar.gz"))
@@ -68,7 +68,7 @@ object Dependencies {
 
     // Karaf's MBean dependencies, see: http://karaf.apache.org/manual/latest/users-guide/monitoring.html
     val config = kmodule("config") // {{org.apache.karaf:type=config,name=*}}: management of the OSGi bundles.
-    val bundle = kmodule("bundle") // {{org.apache.karaf:type=config,name=*}}: management of the configurations.
+    val bundle = kmodule("bundle") // {{org.apache.karaf:type=bundle,name=*}}: management of the configurations.
     val features = kmodule("features") // {{org.apache.karaf:type=feature,name=*}}: management of the Apache Karaf features.
     val instance = kmodule("instance") // {{org.apache.karaf:type=instance,name=*}}: management of the instances.
 
