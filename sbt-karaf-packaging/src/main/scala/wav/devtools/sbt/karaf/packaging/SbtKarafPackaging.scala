@@ -7,11 +7,13 @@ import sbt._
 
 trait Import {
 
+  import FeaturesXml._
+
   object KarafPackagingKeys {
 
     lazy val featuresXml = taskKey[File]("Generate features.xml")
     lazy val featuresProjectBundle = taskKey[FeaturesXml.Bundle]("The project bundle to add to the project feature")
-    lazy val featuresProjectFeature = taskKey[Option[FeaturesXml.Feature]]("The project feature to add to features.xml")
+    lazy val featuresProjectFeature = taskKey[FeaturesXml.Feature]("The project feature to add to features.xml")
     lazy val featuresScalaFeature = settingKey[FeaturesXml.Feature]("The scala feature to add to features.xml")
     lazy val featuresElements = taskKey[Seq[FeaturesXml.Feature]]("Elements to add to features.xml")
     lazy val featuresProperties = taskKey[Map[String, String]]("Generate properties to inject into features.xml")
@@ -27,45 +29,43 @@ trait Import {
 
   object KarafPackagingSettings {
 
-    lazy val generateFeatures = KarafPackagingKeys.featuresXml := {
+    import KarafPackagingKeys._
+
+    lazy val featuresXmlTask = featuresXml := {
       val featuresTarget = crossTarget.value / "features.xml"
       val featuresSource = (resourceDirectory in Compile).value / "features.xml"
       Util.write(
         featuresTarget,
         featuresSource,
-        FeaturesXml.XSD,
-        KarafPackagingKeys.featuresProperties.value,
-        FeaturesXml.toXml(
+        XSD,
+        featuresProperties.value,
+        toXml(
           name.value,
-          KarafPackagingKeys.featuresElements.value))
+          featuresElements.value))
     }
 
-    lazy val bundle = KarafPackagingKeys.featuresProjectBundle := {
+    lazy val featuresProjectBundleTask = featuresProjectBundle := {
       val (_, f) = (packagedArtifact in(Compile, packageBin)).value
-      FeaturesXml.Bundle(f.toURI.toString)
+      Bundle(f.toURI.toString)
     }
 
-    lazy val feature = KarafPackagingKeys.featuresProjectFeature :=
-      Some(
-        FeaturesXml.Feature(name.value, Some(version.value),
-          Set(KarafPackagingKeys.featuresScalaFeature.value.Ref,
-            KarafPackagingKeys.featuresProjectBundle.value)))
+    lazy val featuresProjectFeatureTask = featuresProjectFeature :=
+      Feature(name.value, Some(version.value),
+        Set(featuresScalaFeature.value.toRef,
+          featuresProjectBundle.value))
 
-    lazy val features = KarafPackagingKeys.featuresElements := {
-      val pFeat = KarafPackagingKeys.featuresProjectFeature.value
-      val scFeat = KarafPackagingKeys.featuresScalaFeature.value
-      if (pFeat.isDefined) Seq(pFeat.get, scFeat) else Seq()
-    }
+    lazy val featuresElementsTask = featuresElements := Seq(
+      featuresProjectFeature.value,
+      featuresScalaFeature.value)
 
-    lazy val scalaFeature = KarafPackagingKeys.featuresScalaFeature := {
-      import FeaturesXml._
+    lazy val featuresScalaFeatureTask = featuresScalaFeature := {
       val scVersion = scalaVersion.value
       val scbVersion = scalaBinaryVersion.value
       Feature("scala-library", Some(scbVersion), Set(
         Bundle(s"mvn:org.scala-lang/scala-library/$scVersion")))
     }
 
-    lazy val generateDependsFile = KarafPackagingKeys.generateDependsFile := {
+    lazy val generateDependsFileTask = generateDependsFile := {
       val f = target.value / "dependencies.properties"
       val artifacts = for {
         conf <- update.value.configurations
@@ -95,12 +95,13 @@ trait SbtKarafPackagingSettings {
   import KarafPackagingSettings._
 
   lazy val featuresSettings: Seq[Setting[_]] = Seq(
-    bundle,
-    feature,
-    scalaFeature,
-    features,
+    featuresXmlTask,
+    featuresElementsTask,
+    featuresProjectBundleTask,
+    featuresScalaFeatureTask,
+    featuresProjectFeatureTask,
     KarafPackagingKeys.featuresProperties := Map(),
-    generateFeatures,
+    generateDependsFileTask,
     packagedArtifacts <<= Def.task {
       packagedArtifacts.value.updated(
         Artifact(name.value, `type` = "xml", extension = "xml", classifier = "features"),

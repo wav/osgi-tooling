@@ -11,9 +11,11 @@ object FeaturesXml {
 
   abstract class FeatureElem {
     private[FeaturesXml] def xml: Elem
+    private[FeaturesXml] val isEmpty = false
   }
 
   case class Bundle(url: String) extends FeatureElem {
+    require(!url.isEmpty, "missing bundle url")
     private[model] lazy val xml =
       <bundle>{url}</bundle>
   }
@@ -30,16 +32,22 @@ object FeaturesXml {
     private lazy val attrs = initFeatAttrs(version).updated("name", name)
     private[model] lazy val xml =
       Util.setAttrs(<feature>
-        {elems.map(_.xml)}
+        {elems.filterNot(_.isEmpty).map(_.xml)}
       </feature>, attrs)
-    lazy val Ref = FeatureRef(name, version)
+    private[FeaturesXml] val isEmpty = name == null
+    lazy val toRef = FeatureRef(name, version)
   }
+
+  val emptyFeature = Feature(null)
 
   case class FeatureRef(name: String, version: Option[String] = None) extends FeatureElem {
     private lazy val attrs = initFeatAttrs(version)
     private[model] lazy val xml =
       Util.setAttrs(<feature>{name}</feature>, attrs)
+    private[FeaturesXml] override val isEmpty = name == null
   }
+
+  val emptyFeatureRef = FeatureRef(null)
 
   private[packaging] val XMLNS = "http://karaf.apache.org/xmlns/features/v1.2.0"
   private[packaging] val XSD = "org/apache/karaf/features/karaf-features-1.2.0.xsd"
@@ -51,7 +59,7 @@ object FeaturesXml {
         case Elem(prefix, label, attribs, scope, _, existingElements@_*) =>
           Elem(prefix, label, attribs, scope, true, existingElements ++ features.map(_.xml): _*)
       }
-    }.getOrElse(features.map(_.xml))}
+    }.getOrElse(features.filterNot(_.isEmpty).map(_.xml))}
     </features>
 
 }

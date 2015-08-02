@@ -130,7 +130,7 @@ trait SbtKarafSettings {
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"), // for junit-interface / paxExam
     fork in Test := true, // IMPORTANT, forking ensures that the container starts with the correct classpath
     outputStrategy in Test := Some(StdoutOutput),
-    generateDependsFile,
+    generateDependsFileTask,
     resourceGenerators in Compile <+= Def.task {
       val f = (resourceManaged in Compile).value / packaging.model.DependenciesProperties.jarPath
       IO.copyFile(KarafPackagingKeys.generateDependsFile.value,f)
