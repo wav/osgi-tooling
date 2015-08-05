@@ -19,7 +19,7 @@ lazy val root = project.in(file("."))
     .settings(
         featuresProjectFeature := {
             val pf = featuresProjectFeature.value
-            pf.copy(elems = pf.elems ++ Set(
+            pf.copy(deps = pf.deps ++ Set(
                 FeatureRef("scr"),
                 (featuresProjectFeature in projectA).value.toRef,
                 (featuresProjectFeature in projectB).value.toRef

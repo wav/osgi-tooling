@@ -15,7 +15,7 @@ trait Import {
     lazy val featuresProjectBundle = taskKey[FeaturesXml.Bundle]("The project bundle to add to the project feature")
     lazy val featuresProjectFeature = taskKey[FeaturesXml.Feature]("The project feature to add to features.xml")
     lazy val featuresScalaFeature = settingKey[FeaturesXml.Feature]("The scala feature to add to features.xml")
-    lazy val featuresElements = taskKey[Seq[FeaturesXml.Feature]]("Elements to add to features.xml")
+    lazy val featuresElements = taskKey[Seq[FeaturesXml.FeaturesElem]]("Elements to add to features.xml")
     lazy val featuresProperties = taskKey[Map[String, String]]("Generate properties to inject into features.xml")
 
     /**

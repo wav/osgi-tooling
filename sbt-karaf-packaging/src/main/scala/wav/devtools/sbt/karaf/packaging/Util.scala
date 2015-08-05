@@ -1,12 +1,13 @@
 package wav.devtools.sbt.karaf.packaging
 
-import java.io.{File, InputStream, StringWriter}
+import java.io.{FileInputStream, File, InputStream, StringWriter}
 import javax.xml.transform.{OutputKeys, TransformerFactory}
 import javax.xml.transform.stream.{StreamResult, StreamSource}
 import javax.xml.validation.SchemaFactory
 import collection.JavaConversions._
 import org.apache.commons.lang3.text.StrSubstitutor
 import sbt.IO
+import java.util.jar.{Manifest => JManifest, JarInputStream}
 
 import scala.xml._
 
@@ -48,6 +49,13 @@ private[packaging] object Util {
   def setAttrs(e: Elem, attrs: Map[String, String]): Elem =
     e.copy(attributes = attrs.map(t =>
       Attribute(None, t._1, Text(t._2), Null)).fold(Null)((soFar, attr) => soFar append attr))
+
+  def getJarManifest(path: String): JManifest = {
+    val is = new FileInputStream(path)
+    val jar = new JarInputStream(is)
+    jar.getManifest
+  }
+
 }
 
 
