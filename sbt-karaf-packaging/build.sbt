@@ -17,5 +17,6 @@ publishArtifact in Compile := true
 publishArtifact in Test := false
 
 libraryDependencies ++= Seq(
-	deps.commonsLang,
-	deps.slf4j)
+  deps.scalaTest,
+  deps.commonsLang,
+  deps.slf4j)

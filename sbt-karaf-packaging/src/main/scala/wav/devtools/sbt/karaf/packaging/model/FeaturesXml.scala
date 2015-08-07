@@ -2,11 +2,12 @@ package wav.devtools.sbt.karaf.packaging.model
 
 import java.io.File
 
-import sbt._
 import wav.devtools.sbt.karaf.packaging.Util
 
+import scala.util.{Success, Failure, Try}
 import scala.xml.{Elem, XML}
 
+// TODO: collect feature depencencies that are not simple elements. e.g. have a configuration.
 object FeaturesXml {
 
   sealed trait FeaturesElem {
@@ -68,19 +69,35 @@ object FeaturesXml {
 
   val emptyFeatureRef = FeatureRef(null)
 
-  private[packaging] val XMLNS = "http://karaf.apache.org/xmlns/features/v1.2.0"
-  private[packaging] val XSD = "org/apache/karaf/features/karaf-features-1.2.0.xsd"
+  private[packaging] val featuresSchemas =
+    Seq("1.2.0", "1.3.0")
+    .map(v => v -> (s"http://karaf.apache.org/xmlns/features/v$v" -> s"org/apache/karaf/features/karaf-features-$v.xsd"))
+    .toMap
 
-  private[packaging] def toXml(name: String, elems: Seq[FeaturesElem], target: Option[File] = None): Elem =
-    <features xmlns={XMLNS} name={name}>
-      {target.filter(_.exists).map { target =>
-      XML.loadFile(target) \\ "features" match {
-        case Elem(prefix, label, attribs, scope, _, existingElements @ _*) =>
-          Elem(prefix, label, attribs, scope, true, existingElements ++ elems.map(_.xml): _*)
+  private[packaging] val (featuresXsdUrl, featuresXsd) = featuresSchemas("1.3.0")
+
+  private[packaging] def makeFeaturesXml[N <: scala.xml.Node](name: String, elems: Seq[FeaturesElem]): Elem =
+    <features xmlns={featuresXsdUrl} name={name}>{
+      elems.filterNot(_.isEmpty).map(_.xml)
+    }</features>
+
+  private[packaging] def readFeaturesXml[N <: scala.xml.Node](source: N): Seq[FeaturesElem] = {
+    val base = source \\ "features"
+    val repositories = base \ "repository" collect { case e: Elem => Repository(e.text) }
+    val features = base \ "feature" map { feature =>
+      val bundles = feature \ "bundle" collect {
+        case e: Elem if e.text.startsWith("wrap:") => WrappedBundle(e.text, Map.empty) // TODO
+        case e: Elem => Bundle(e.text)
       }
-    }.getOrElse(elems.filterNot(_.isEmpty).map(_.xml))}
-    </features>
-
+      val featureRefs = feature \ "feature" collect {
+        case e: Elem if e.child.length == 1 => FeatureRef(e.text, e.attributes.asAttrMap.get("version"))
+      }
+      val m = feature.attributes.asAttrMap
+      Feature(m("name"), m.get("version"), (bundles ++ featureRefs).toSet)
+    }
+    repositories ++ features
+  }
+  
 }
 
 import FeaturesXml._
@@ -99,41 +116,41 @@ case class MavenUrl(groupId: String, artifactId: String, version: String, `type`
 
 // An artifact that is resolved for a features file.
 case class FeaturesArtifact(
-  file: File,
-  url: Option[String],
-  groupId: String,
-  artifactId: String,
-  version: String, // REVIEW: should validate against FeaturesXml.OsgiVersion
-  `type`: String,
-  ext: String,
-  classifier: Option[String]) {
+  module: sbt.ModuleID,
+  artifact: sbt.Artifact,
+  file: File) {
+  
+  lazy val mavenUrl: MavenUrl =
+    MavenUrl(module.organization, artifact.name, module.revision, Some(artifact.extension), artifact.classifier)
 
-  def toMavenUrl: MavenUrl =
-    MavenUrl(groupId, artifactId, version, Some(ext), classifier)
+  lazy val url: String =
+    artifact.url.map(_.toString) getOrElse mavenUrl.toString
 
-  def toUrl: String =
-    url getOrElse toMavenUrl.toString
-}
+  lazy val isOSGiBundle: Boolean =
+    if (artifact.extension != "jar") false
+    else Util.getJarManifest(file.toString)
+      .getMainAttributes
+      .containsKey("Bundle-SymbolicName")
 
-object FeaturesArtifact {
+  lazy val isFeaturesRepository: Boolean =
+    if (artifact.extension != "xml" || artifact.classifier != Some("features")) false
+    else Try(Util.validateXml(file.getCanonicalPath, getClass.getResourceAsStream("/" + FeaturesXml.featuresXsd))) match {
+      case Failure(ex) => println(ex); false
+      case Success(_) => true
+    }
 
-  def isBundle(fa: FeaturesArtifact): Boolean = {
-    if (fa.ext != "jar") return false
-    var manifest = Util.getJarManifest(fa.file.toString)
-    manifest.getMainAttributes.containsKey("Bundle-SymbolicName")
-  }
+  lazy val featuresElems = FeaturesXml.readFeaturesXml(XML.loadFile(file))
 
-  def toRepository(fa: FeaturesArtifact): Option[Repository] =
-    if (fa.ext == "xml" && fa.classifier == Some("features")) Some(Repository(fa.toUrl)) else None
+  lazy val featureRepositories: Set[String] =
+    if (!isFeaturesRepository) Set.empty
+    else featuresElems.collect { case Repository(url) => url }.toSet
 
-  def toBundle(fa: FeaturesArtifact): Option[ABundle] =
-    if (fa.ext == "jar" && (fa.`type` == "jar" || fa.`type` == "bundle")) {
-      val bundle = if (isBundle(fa)) Bundle(fa.toUrl)
-      else WrappedBundle(fa.toUrl, Map(
-        "Bundle-SymbolicName" -> (fa.groupId + "." + fa.artifactId).replace("-", "."),
-        "Bundle-Version" -> fa.version
-      ))
-      Some(bundle)
-    } else None
+  lazy val features: Set[FeatureRef] =
+    if (!isFeaturesRepository) Set.empty
+    else featuresElems.collect { case Feature(name, version, _) => FeatureRef(name, version) }.toSet
+
+  lazy val dependencies: Set[FeatureDependency] =
+    if (!isFeaturesRepository) Set.empty
+    else featuresElems.collect { case f: Feature => f.deps }.flatten.toSet
 
 }

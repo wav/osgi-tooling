@@ -1,6 +1,6 @@
 package wav.devtools.sbt.karaf.packaging
 
-import model.{DependenciesProperties => DProps, FeaturesXml}
+import wav.devtools.sbt.karaf.packaging.model.{DependenciesProperties => DProps, FeaturesXmlModuleID, FeaturesXml}
 
 import sbt.Keys._
 import sbt._
@@ -12,6 +12,7 @@ trait Import {
   object KarafPackagingKeys {
 
     lazy val featuresXml = taskKey[File]("Generate features.xml")
+    lazy val featuresDependencies = settingKey[Seq[FeaturesXmlModuleID]]("features repositories ")
     lazy val featuresProjectBundle = taskKey[FeaturesXml.Bundle]("The project bundle to add to the project feature")
     lazy val featuresProjectFeature = taskKey[FeaturesXml.Feature]("The project feature to add to features.xml")
     lazy val featuresScalaFeature = settingKey[FeaturesXml.Feature]("The scala feature to add to features.xml")
@@ -37,11 +38,9 @@ trait Import {
       Util.write(
         featuresTarget,
         featuresSource,
-        XSD,
+        featuresXsd,
         featuresProperties.value,
-        toXml(
-          name.value,
-          featuresElements.value))
+        makeFeaturesXml(name.value, featuresElements.value))
     }
 
     lazy val featuresProjectBundleTask = featuresProjectBundle := {

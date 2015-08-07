@@ -17,8 +17,8 @@
 
 -->
 <xs:schema elementFormDefault="qualified"
-    targetNamespace="http://karaf.apache.org/xmlns/features/v1.2.0"
-    xmlns:tns="http://karaf.apache.org/xmlns/features/v1.2.0"
+    targetNamespace="http://karaf.apache.org/xmlns/features/v1.3.0"
+    xmlns:tns="http://karaf.apache.org/xmlns/features/v1.3.0"
     xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
     <xs:annotation>
@@ -61,32 +61,30 @@ Feature definition.
 Definition of the Feature.
             ]]></xs:documentation>
         </xs:annotation>
-        <xs:choice minOccurs="0" maxOccurs="unbounded">
-            <xs:element name="details" minOccurs="0" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation><![CDATA[
-The help text shown for this feature when using feature:info console command.
-                    ]]>
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:element>
-            <xs:element name="config" type="tns:config" />
-            <xs:element name="configfile" type="tns:configFile" />
-            <xs:element name="feature" type="tns:dependency" />
-            <xs:element name="bundle" type="tns:bundle" />
-            <xs:element name="conditional" type="tns:conditional" />
-        </xs:choice>
+        <xs:sequence>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="details" minOccurs="0" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation><![CDATA[
+    The help text shown for this feature when using feature:info console command.
+                        ]]>
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="config" type="tns:config" />
+                <xs:element name="configfile" type="tns:configFile" />
+                <xs:element name="feature" type="tns:dependency" />
+                <xs:element name="bundle" type="tns:bundle" />
+                <xs:element name="conditional" type="tns:conditional" />
+                <xs:element name="requirement" type="tns:requirement" />
+                <xs:element name="capability" type="tns:capability" />
+                <xs:element name="library" type="tns:library" />
+            </xs:choice>
+            <xs:element name="scoping" minOccurs="0" maxOccurs="1" type="tns:scoping" />
+        </xs:sequence>
         <xs:attribute name="name" type="tns:featureName" use="required" />
         <xs:attribute name="version" type="xs:string" default="0.0.0" />
         <xs:attribute name="description" type="xs:string" />
-        <xs:attribute name="resolver" type="tns:resolver">
-            <xs:annotation>
-                <xs:documentation><![CDATA[
-Optional alternative resolver to use for determining the list of bundles to install for a given feature.
-                ]]>
-                </xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
         <xs:attribute name="install" type="tns:install">
             <xs:annotation>
                 <xs:documentation><![CDATA[
@@ -104,6 +102,7 @@ from the default start level defined in Karaf's config.properties.
                 </xs:documentation>
              </xs:annotation>
          </xs:attribute>
+        <xs:attribute name="hidden" type="xs:boolean" default="false" />
     </xs:complexType>
 
     <xs:complexType name="conditional">
@@ -168,6 +167,8 @@ Dependency of feature.
         <xs:simpleContent>
             <xs:extension base="tns:featureName">
                 <xs:attribute name="version" type="xs:string" default="0.0.0" />
+                <xs:attribute name="prerequisite" type="xs:boolean" default="false"/>
+                <xs:attribute name="dependency" type="xs:boolean" default="false"/>
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>
@@ -183,6 +184,14 @@ read in as a properties file.
         <xs:simpleContent>
             <xs:extension base="xs:string">
                 <xs:attribute name="name" type="xs:string" use="required" />
+                <xs:attribute name="append" type="xs:boolean" use="optional">
+                	<xs:annotation>
+                		<xs:documentation><![CDATA[
+Optional flag to append unknown values to the configuration.                 		
+                		]]>
+                		</xs:documentation>
+                	</xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>
@@ -214,6 +223,76 @@ If the configFile already exists at the finalname location, whether or not to re
         </xs:simpleContent>
     </xs:complexType>
 
+    <xs:complexType name="requirement">
+        <xs:annotation>
+            <xs:documentation><![CDATA[
+Additional requirements of this feature.
+            ]]></xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="prerequisite" type="xs:boolean" default="false"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="capability">
+        <xs:annotation>
+            <xs:documentation><![CDATA[
+Additional capability of this feature.
+            ]]></xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="library">
+        <xs:annotation>
+            <xs:documentation><![CDATA[
+Additional capability of this feature.
+            ]]></xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="type" type="tns:libraryType" default="default"/>
+                <xs:attribute name="export" type="xs:boolean" default="false"/>
+                <xs:attribute name="delegate" type="xs:boolean" default="false"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:simpleType name="libraryType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="default"/>
+            <xs:enumeration value="endorsed"/>
+            <xs:enumeration value="extension"/>
+            <xs:enumeration value="boot"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="scoping">
+        <xs:annotation>
+            <xs:documentation><![CDATA[
+Scoping definition for this feature.
+            ]]></xs:documentation>
+        </xs:annotation>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="import" type="tns:scopeFilter"/>
+            <xs:element name="export" type="tns:scopeFilter"/>
+        </xs:choice>
+        <xs:attribute name="acceptDependencies" type="xs:boolean"/>
+    </xs:complexType>
+
+    <xs:complexType name="scopeFilter">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="namespace"  type="xs:string" use="required"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
     <xs:simpleType name="featureName">
         <xs:annotation>
             <xs:documentation><![CDATA[
@@ -225,18 +304,6 @@ Feature name should be non empty string.
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="resolver">
-        <xs:annotation>
-            <xs:documentation><![CDATA[
-Resolver to use. Karaf will look for OSGi service which have following properties:
-objectClass: org.apache.karaf.features.Resolver
-name: the value
-            ]]></xs:documentation>
-        </xs:annotation>
-        <xs:restriction base="xs:string">
-            <xs:minLength value="1" />
-        </xs:restriction>
-    </xs:simpleType>
     <xs:simpleType name="install">
         <xs:annotation>
             <xs:documentation><![CDATA[

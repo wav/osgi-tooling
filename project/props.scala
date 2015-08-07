@@ -37,6 +37,7 @@ object Dependencies {
   val `slf4j-simple`          = "org.slf4j" % "slf4j-simple" % "1.7.10"
   val commonsLang             = "org.apache.commons" % "commons-lang3" % "3.4"
   val osgiCore                = "org.osgi" % "org.osgi.core" % "6.0.0"
+  val scalaTest               = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
   /**
    * Pax exam dependencies: // https://ops4j1.jira.com/wiki/display/PAXEXAM4/Karaf+Container

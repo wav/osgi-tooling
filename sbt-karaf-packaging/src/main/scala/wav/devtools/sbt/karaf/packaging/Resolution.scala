@@ -2,7 +2,7 @@ package wav.devtools.sbt.karaf.packaging
 
 import sbt._
 import sbt.Keys._
-import wav.devtools.sbt.karaf.packaging.model.{FeaturesXml, FeaturesArtifact}
+import wav.devtools.sbt.karaf.packaging.model.FeaturesArtifact
 
 private[packaging] object Resolution {
 
@@ -12,17 +12,22 @@ private[packaging] object Resolution {
 
   def toFeaturesArtifacts(mr: ModuleReport): Seq[FeaturesArtifact] =
     for {(a, f) <- mr.artifacts} yield
-    FeaturesArtifact(f, a.url.map(_.toString), mr.module.organization, a.name, mr.module.revision, a.`type`, a.extension, a.classifier)
+    FeaturesArtifact(mr.module, a, f)
 
-  def resolveArtifacts(config: Configuration, af: ArtifactFilter): SbtTask[Seq[FeaturesArtifact]] = Def.task {
-    val confReport = (update in config).value.filter(af).configuration(config.name)
-    confReport.map(_.modules.flatMap(toFeaturesArtifacts)) getOrElse Seq()
+  def resolveArtifacts(ur: UpdateReport): SbtTask[Seq[FeaturesArtifact]] = Def.task {
+    val filtered = ur.filter(featuresArtifactFilter | bundleArtifactFilter)
+    ur.allConfigurations.flatMap(ur.configuration(_).get.modules.flatMap(toFeaturesArtifacts))
   }
 
-  def resolveBundles(config: Configuration): SbtTask[Seq[FeaturesXml.ABundle]] =
-    resolveArtifacts(config, bundleArtifactFilter).map(_.flatMap(FeaturesArtifact.toBundle))
+  // How do we resolve ?!? .. maybe ...
+  // transform the sbt `updateClassifiers` task for adding undefined modules then use the `update` task to collecting results and build a features file.
 
-  def resolveRepositories(config: Configuration): SbtTask[Seq[FeaturesXml.Repository]] =
-    resolveArtifacts(config, featuresArtifactFilter).map(_.flatMap(FeaturesArtifact.toRepository))
+  // resolution strategy.
+  //     1. Resolve all repositories
+  //     2. Resolve all features
+  //     3. Add all bundles found in features
+
+  // Nice to haves.
+  //    a. identify artifacts that come from resolvers that are of the maven type and use MavenUrl
 
 }
