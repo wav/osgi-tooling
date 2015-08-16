@@ -1,6 +1,5 @@
 import wav.devtools.sbt.karaf.packaging.SbtKarafPackaging
 import SbtKarafPackaging.autoImport._
-import KarafPackagingKeys._
 import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
 
 scalaVersion in ThisBuild := "2.11.7"
@@ -15,16 +14,13 @@ lazy val projectB = project.in(file("B"))
 
 lazy val root = project.in(file("."))
     .enablePlugins(SbtKarafPackaging)
-    .dependsOn(projectA, projectB) // generate upstream features.
-    .settings(
-        featuresProjectFeature := {
-            val pf = featuresProjectFeature.value
-            pf.copy(deps = pf.deps ++ Set(
-                FeatureRef("scr"),
-                (featuresProjectFeature in projectA).value.toRef,
-                (featuresProjectFeature in projectB).value.toRef
-            ))
-        })
+    .dependsOn(projectA, projectB)
+    .settings(featuresXml := {
+      val xml = featuresXml.value
+      xml.copy(elems = xml.elems :+
+        (featuresProjectFeature in projectA).value :+
+        (featuresProjectFeature in projectB).value)
+    })
 
 lazy val checkFeaturesXml = taskKey[Unit]("Tests if the features.xml file was added.")
 

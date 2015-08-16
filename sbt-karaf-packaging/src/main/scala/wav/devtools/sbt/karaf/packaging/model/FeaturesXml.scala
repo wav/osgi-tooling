@@ -1,11 +1,8 @@
 package wav.devtools.sbt.karaf.packaging.model
 
-import java.io.File
-
 import wav.devtools.sbt.karaf.packaging.Util
 
-import scala.util.{Success, Failure, Try}
-import scala.xml.{Elem, XML}
+import scala.xml.Elem
 
 // TODO: collect feature depencencies that are not simple elements. e.g. have a configuration.
 object FeaturesXml {
@@ -60,11 +57,34 @@ object FeaturesXml {
 
   val emptyFeature = Feature(null)
 
-  case class FeatureRef(name: String, version: Option[String] = None) extends FeatureDependency {
+  private def compareVersion(a: String, b: String): Int = {
+    var as = a.split('.').toSeq
+    var bs = b.split('.').toSeq
+
+    if (as.size > bs.size) bs = bs ++ (1 to (as.size - bs.size)).map(_ => "")
+    else if (as.size < bs.size) as = as ++ (1 to (bs.size - as.size)).map(_ => "")
+
+    if (as == bs) 0
+    else {
+      var i = 0
+      while (i < as.size) {
+        if (as(i) > bs(i)) return 1
+        if (as(i) < bs(i)) return -1
+        i += 1
+      }
+      0
+    }
+  }
+
+  case class FeatureRef(name: String, version: Option[String] = None) extends FeatureDependency with Ordered[FeatureRef] {
     private lazy val attrs = initFeatAttrs(version)
     private[model] lazy val xml =
       Util.setAttrs(<feature>{name}</feature>, attrs)
     private[FeaturesXml] override val isEmpty = name == null
+    override def toString(): String =
+      if (version.isEmpty) name else s"$name:${version.get}"
+    def compare(that: FeatureRef): Int =
+      compareVersion(this.version.getOrElse(""), that.version.getOrElse(""))
   }
 
   val emptyFeatureRef = FeatureRef(null)
@@ -76,12 +96,12 @@ object FeaturesXml {
 
   private[packaging] val (featuresXsdUrl, featuresXsd) = featuresSchemas("1.3.0")
 
-  private[packaging] def makeFeaturesXml[N <: scala.xml.Node](name: String, elems: Seq[FeaturesElem]): Elem =
-    <features xmlns={featuresXsdUrl} name={name}>{
-      elems.filterNot(_.isEmpty).map(_.xml)
+  private[packaging] def makeFeaturesXml[N <: scala.xml.Node](featuresXml: FeaturesXml): Elem =
+    <features xmlns={featuresXsdUrl} name={featuresXml.name}>{
+      featuresXml.elems.filterNot(_.isEmpty).map(_.xml)
     }</features>
 
-  private[packaging] def readFeaturesXml[N <: scala.xml.Node](source: N): Seq[FeaturesElem] = {
+  private[packaging] def readFeaturesXml[N <: scala.xml.Node](source: N): Option[FeaturesXml] = {
     val base = source \\ "features"
     val repositories = base \ "repository" collect { case e: Elem => Repository(e.text) }
     val features = base \ "feature" map { feature =>
@@ -95,62 +115,13 @@ object FeaturesXml {
       val m = feature.attributes.asAttrMap
       Feature(m("name"), m.get("version"), (bundles ++ featureRefs).toSet)
     }
-    repositories ++ features
-  }
-  
-}
-
-import FeaturesXml._
-
-case class MavenUrl(groupId: String, artifactId: String, version: String, `type`: Option[String] = None, classifer: Option[String] = None) {
-  override def toString: String = {
-    val url = s"mvn:$groupId/$artifactId/$version"
-    (`type`, classifer) match {
-      case (Some(t), Some(c)) => s"$url/$t/$c"
-      case (Some(t), None) => s"$url/$t"
-      case (None, Some(c)) => s"$url//$c"
-      case _ => url
+    val Some((n, v)) = base collectFirst {
+      case e: Elem => (e.attributes.asAttrMap("name"), e.attributes.asAttrMap.get("version"))
     }
+    val fxml = new FeaturesXml(n, v, repositories ++ features)
+    if (fxml.elems.nonEmpty) Some(fxml) else None
   }
-}
-
-// An artifact that is resolved for a features file.
-case class FeaturesArtifact(
-  module: sbt.ModuleID,
-  artifact: sbt.Artifact,
-  file: File) {
-  
-  lazy val mavenUrl: MavenUrl =
-    MavenUrl(module.organization, artifact.name, module.revision, Some(artifact.extension), artifact.classifier)
-
-  lazy val url: String =
-    artifact.url.map(_.toString) getOrElse mavenUrl.toString
-
-  lazy val isOSGiBundle: Boolean =
-    if (artifact.extension != "jar") false
-    else Util.getJarManifest(file.toString)
-      .getMainAttributes
-      .containsKey("Bundle-SymbolicName")
-
-  lazy val isFeaturesRepository: Boolean =
-    if (artifact.extension != "xml" || artifact.classifier != Some("features")) false
-    else Try(Util.validateXml(file.getCanonicalPath, getClass.getResourceAsStream("/" + FeaturesXml.featuresXsd))) match {
-      case Failure(ex) => println(ex); false
-      case Success(_) => true
-    }
-
-  lazy val featuresElems = FeaturesXml.readFeaturesXml(XML.loadFile(file))
-
-  lazy val featureRepositories: Set[String] =
-    if (!isFeaturesRepository) Set.empty
-    else featuresElems.collect { case Repository(url) => url }.toSet
-
-  lazy val features: Set[FeatureRef] =
-    if (!isFeaturesRepository) Set.empty
-    else featuresElems.collect { case Feature(name, version, _) => FeatureRef(name, version) }.toSet
-
-  lazy val dependencies: Set[FeatureDependency] =
-    if (!isFeaturesRepository) Set.empty
-    else featuresElems.collect { case f: Feature => f.deps }.flatten.toSet
 
 }
+
+case class FeaturesXml(name: String, version: Option[String] = None, elems: Seq[FeaturesXml.FeaturesElem] = Nil)

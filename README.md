@@ -8,7 +8,7 @@ This is an experiment, things are very likely to change. Further work on this is
 
 ## [Karaf](https://karaf.apache.org/) plugins for SBT
 
-Tested with Karaf 4.0.0.M2, PaxExam 4.5.0 on OS X.
+Tested with Karaf 4.0.0, PaxExam 4.5.0 on OS X.
 
 ## Getting started
 
@@ -39,7 +39,7 @@ enablePlugins(SbtKarafPackaging)
 *Run the generate features.xml task*
 
 ```bash
-sbt> featuresXml
+sbt> generateFeaturesFile
 ```
 
 #### TODO
@@ -49,6 +49,7 @@ sbt> featuresXml
 - Create a KAR
 
 ## sbt-karaf
+## sbt-karaf (broken)
 
 Extends `sbt-karaf-packaging` with the additional functionality:
  

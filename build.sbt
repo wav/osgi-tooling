@@ -7,6 +7,7 @@ name := "osgitools"
 version in ThisBuild := props.version
 
 lazy val `sbt-karaf-packaging` = project
+  .settings(addMavenResolverPlugin: _*)
 
 lazy val `karaf-mbean-wrapper` = project
   .settings(

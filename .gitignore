@@ -1,4 +1,6 @@
 **/.idea/**
 .idea/**
 **/project
-project/userPlugins.sbt
+project/userPlugins.sbt*.ignore
+**/*.ignore
+TODO.md

@@ -19,10 +19,11 @@ trait Import extends packaging.Import {
     lazy val karafUndeployFeature = taskKey[Unit]("Undeploy the project's features.xml in the configured karaf container")
 
   }
-  
-  object KarafSettings {
 
-    import KarafPackagingSettings._
+  // TODO: style, separate the task and the keys like KarafPackagingDefaults
+  object KarafDefaults {
+
+    import KarafKeys._
 
     lazy val bundleStartArgs = KarafKeys.karafBundleStartArgs := BundleStartArgs(organization.value + "." + name.value)
 
@@ -92,64 +93,55 @@ trait Import extends packaging.Import {
     }
 
     lazy val deployFeature = KarafKeys.karafDeployFeature := {
-      val repo = "file:" + KarafPackagingKeys.featuresXml.value.getCanonicalPath
+      val ff = KarafPackagingKeys.generateFeaturesFile.value
+      require(ff.isDefined, "KarafPackagingKeys.generateFeaturesFile must produce a features file")
+      val repo = "file:" + ff.get.getCanonicalPath
       val features = handled(KarafKeys.karafInstanceServices.value.FeaturesService)
       if (!features.repoRefresh(repo)) sys.error("Couldn't add repository, " + repo)
       if (!features.install(name.value, version.value, false)) sys.error("Couldn't install project feature")
     }
 
     lazy val undeployFeature = KarafKeys.karafUndeployFeature := {
-      val repo = "file:" + KarafPackagingKeys.featuresXml.value.getCanonicalPath
+      val ff = KarafPackagingKeys.generateFeaturesFile.value
+      require(ff.isDefined, "KarafPackagingKeys.generateFeaturesFile must produce a features file")
+      val repo = "file:" + ff.get.getCanonicalPath
       val features = handled(KarafKeys.karafInstanceServices.value.FeaturesService)
       if (!features.uninstall(name.value, version.value)) sys.error("Couldn't uninstall project feature")
       if (!features.repoRemove(repo)) sys.error("Couldn't remove repository, " + repo)
     }
 
+    /**
+     * Inorder to get pax test to run, you only need:
+     * - Pax dependencies for a container as per the pax exam website
+     * - A JUnit test framework must be registered with SBT
+     */
+    lazy val paxSettings: Seq[Setting[_]] = Seq(
+      libraryDependencies ++= {
+        import wav.devtools.sbt.karaf.Dependencies._
+        Seq(paxExam, paxKaraf, paxAether, javaxInject, paxJunit, junit, junitInterface, osgiCore, Karaf.`package`)
+      },
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"), // for junit-interface / paxExam
+      fork in Test := true, // IMPORTANT, forking ensures that the container starts with the correct classpath
+      outputStrategy in Test := Some(StdoutOutput),
+      resourceGenerators in Compile <+= Def.task {
+        val f = (resourceManaged in Compile).value / packaging.model.DependenciesProperties.jarPath
+        IO.copyFile(KarafPackagingKeys.generateDependsFile.value,f)
+        Seq(f)
+      })
+
+    lazy val karafSettings: Seq[Setting[_]] = Seq(
+      bundleStartArgs,
+      containerArgs,
+      KarafKeys.karafInstanceArgs := None,
+      containerServices,
+      instanceServices,
+      destroyInstance,
+      deployFeature,
+      undeployFeature,
+      refreshBundle,
+      KarafKeys.karafRefreshBundle <<= KarafKeys.karafRefreshBundle dependsOn(KarafKeys.karafDeployFeature))
+
   }
-
-}
-
-trait SbtKarafSettings {
-
-  val autoImport: Import
-
-  import autoImport._
-
-  import KarafPackagingSettings._
-
-  /**
-   * Inorder to get pax test to run, you only need:
-   * - Pax dependencies for a container as per the pax exam website
-   * - A JUnit test framework must be registered with SBT
-   */
-  lazy val paxSettings: Seq[Setting[_]] = Seq(
-    libraryDependencies ++= {
-      import wav.devtools.sbt.karaf.Dependencies._
-      Seq(paxExam, paxKaraf, paxAether, javaxInject, paxJunit, junit, junitInterface, osgiCore, Karaf.`package`)
-    },
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"), // for junit-interface / paxExam
-    fork in Test := true, // IMPORTANT, forking ensures that the container starts with the correct classpath
-    outputStrategy in Test := Some(StdoutOutput),
-    generateDependsFileTask,
-    resourceGenerators in Compile <+= Def.task {
-      val f = (resourceManaged in Compile).value / packaging.model.DependenciesProperties.jarPath
-      IO.copyFile(KarafPackagingKeys.generateDependsFile.value,f)
-      Seq(f)
-    })
-
-  import KarafSettings._
-
-  lazy val karafSettings: Seq[Setting[_]] = Seq(
-    bundleStartArgs,
-    containerArgs,
-    KarafKeys.karafInstanceArgs := None,
-    containerServices,
-    instanceServices,
-    destroyInstance,
-    deployFeature,
-    undeployFeature,
-    refreshBundle,
-    KarafKeys.karafRefreshBundle <<= KarafKeys.karafRefreshBundle dependsOn(KarafKeys.karafDeployFeature))
 
 }
 
@@ -160,11 +152,12 @@ trait SbtKarafSettings {
  * - `SbtKaraf.karafSettings` is for refreshing bundles and features on compile by
  *   managing a karaf instance (via. RMI on a local jvm)
  */
-object SbtKaraf extends AutoPlugin with packaging.SbtKarafPackagingSettings with SbtKarafSettings {
+object SbtKaraf extends AutoPlugin {
 
   val autoImport = new Import {}
 
   override def projectSettings: Seq[Setting[_]] =
-    featuresSettings ++ karafSettings
+    autoImport.KarafPackagingDefaults.featuresSettings ++
+      autoImport.KarafDefaults.karafSettings
 
 }
