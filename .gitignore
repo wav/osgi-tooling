@@ -4,3 +4,4 @@
 project/userPlugins.sbt*.ignore
 **/*.ignore
 TODO.md
+*.html
