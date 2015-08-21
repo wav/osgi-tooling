@@ -2,14 +2,15 @@ package wav.devtools.sbt.karaf.packaging.model
 
 import java.io.File
 
-import FeaturesXml._
-import org.apache.ivy.core.module.descriptor.{DefaultArtifact, Artifact => IvyArtifact}
+import org.apache.ivy.core.module.descriptor.{Artifact => IvyArtifact, DefaultArtifact}
 import org.apache.ivy.core.module.id.ModuleRevisionId
 import wav.devtools.sbt.karaf.packaging.Util
-import collection.mutable
-import collection.JavaConversions._
+import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
 
-import scala.util.{Success, Failure, Try}
+import scala.collection.JavaConversions._
+import scala.collection.mutable
+import scala.collection.mutable.{Set => MSet}
+import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
 // An artifact in a features file.
@@ -99,9 +100,9 @@ case class FeaturesArtifact(module: sbt.ModuleID, artifact: sbt.Artifact, file: 
       Some(new OSGiBundle(module, artifact, file, from))
     else None
 
-  def toRepository: Option[FeaturesRepository] =
+  def toRepository: Option[FeatureRepository] =
     if (!downloaded) None
-    else readFeaturesXml(file.get).map(new FeaturesRepository(module, artifact, file, _))
+    else readFeaturesXml(file.get).map(new FeatureRepository(module, artifact, file, _))
 
 }
 
@@ -112,7 +113,7 @@ case class OSGiBundle(
   from: Option[(String, Option[String])])
   extends FeaturesArtifactData
 
-case class FeaturesRepository(
+case class FeatureRepository(
   module: sbt.ModuleID,
   artifact: sbt.Artifact,
   file: Option[File],
@@ -120,21 +121,15 @@ case class FeaturesRepository(
   extends FeaturesArtifactData {
 
   override def toString(): String = {
-    s"FeaturesRepository($module/${artifact.name},$file,$id, $features})"
+    s"FeaturesRepository(${featuresXml.name},$module/${artifact.name},$file,$features})"
   }
 
   val from = None
 
-  val id: (String, Option[String]) =
-    (featuresXml.name, featuresXml.version)
-
   lazy val repositories: Set[String] =
     featuresXml.elems.collect { case Repository(url) => url }.toSet
 
-  lazy val features: Set[FeatureRef] =
-    featuresXml.elems.collect { case Feature(name, version, _) => FeatureRef(name, version) }.toSet
-
-  lazy val dependencies: Set[FeatureDependency] =
-    featuresXml.elems.collect { case f: Feature => f.deps }.flatten.toSet
+  lazy val features: Set[Feature] =
+    featuresXml.elems.collect { case f: Feature => f }.toSet
 
 }

@@ -1,4 +1,4 @@
 > checkJolokiaIsAvailable
 > checkBundleAndFeatureIncluded
-> generateFeaturesFile
+> featuresFile
 > checkFeaturesXml

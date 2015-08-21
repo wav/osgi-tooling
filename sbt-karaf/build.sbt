@@ -17,3 +17,5 @@ publishArtifact in Compile := true
 publishArtifact in Test := false
 
 libraryDependencies ++= (deps.Karaf.common :+ deps.commonsLang)
+
+updateOptions := updateOptions.value.withCachedResolution(true)

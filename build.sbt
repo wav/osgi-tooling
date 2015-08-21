@@ -30,3 +30,5 @@ resolvers in ThisBuild ++= Seq(
 props.compilerOptions
 
 publishArtifact in ThisBuild := false
+
+updateOptions := updateOptions.value.withCachedResolution(true)

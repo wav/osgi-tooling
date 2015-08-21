@@ -39,6 +39,7 @@ object Dependencies {
   val osgiCore       = "org.osgi" % "org.osgi.core" % "6.0.0"
   val scalaTest      = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
+
   /**
    * Pax exam dependencies: // https://ops4j1.jira.com/wiki/display/PAXEXAM4/Karaf+Container
    */
@@ -58,6 +59,14 @@ object Dependencies {
     val `package` = (("org.apache.karaf" % "apache-karaf" % Version)
       .artifacts(Artifact("apache-karaf", `type` = "tar.gz", extension = "tar.gz"))
       .intransitive)
+
+    def featureID(o: String, n: String, v: String, a: Option[String] = None) =
+      ModuleID(o, n, v, isTransitive = false, explicitArtifacts = Seq(Artifact(a getOrElse s"$n", "xml", "xml", "features")))
+
+    // when this is changed, update the the sbt-karaf-packaging tests
+    val standardFeatures = featureID("org.apache.karaf.features", "standard", Version)
+    val enterpriseFeatures = featureID("org.apache.karaf.features", "enterprise", Version)
+    val paxWebFeatures = featureID("org.ops4j.pax.web", "pax-web-features", "4.1.4")
 
     lazy val common = Seq(
       slf4j,

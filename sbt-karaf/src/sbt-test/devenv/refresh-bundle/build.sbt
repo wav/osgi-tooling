@@ -1,26 +1,28 @@
-import com.typesafe.sbt.osgi.SbtOsgi, SbtOsgi.OsgiKeys._
-import wav.devtools.sbt.karaf.SbtKaraf
-import wav.devtools.sbt.karaf.{Dependencies => deps}
+import wav.devtools.sbt.karaf.SbtKaraf, SbtKaraf.autoImport._
+import com.typesafe.sbt.osgi.SbtOsgi, SbtOsgi.autoImport._
+import KarafKeys._
+import KarafPackagingKeys._
 
-enablePlugins(SbtKaraf)
-
-KarafKeys.karafInstanceArgs := None // TODO: workout why instances get stuck in the Starting state.
-
-SbtOsgi.osgiSettings
-
-libraryDependencies ++= Seq(
-	deps.slf4j % "provided",
-	deps.osgiCore % "provided"
-)
-
-scalaVersion := "2.11.6"
-
-exportPackage := Seq(organization.value + ".refreshbundle")
-
-importPackage := Seq("scala", "scala.*")
+enablePlugins(SbtOsgi, SbtKaraf)
 
 name := "refreshbundle"
 
 organization := "wav.devtools.sbt.karaf.examples"
 
 version := "0.1.0.SNAPSHOT"
+
+scalaVersion := "2.11.6"
+
+libraryDependencies ++= {
+  import wav.devtools.sbt.karaf.Dependencies._
+  Seq(
+    slf4j % "provided",
+    osgiCore % "provided"
+  )
+}
+
+OsgiKeys.exportPackage := Seq(organization.value + ".refreshbundle")
+
+OsgiKeys.importPackage := Seq("scala", "scala.*")
+
+updateOptions := updateOptions.value.withCachedResolution(true)

@@ -33,10 +33,11 @@ private[packaging] object Util {
     validator.validate(new StreamSource(xmlFile))
   }
 
-  def write(target: File, source: File, xsd: String, props: Map[String, String], elems: Elem): File = {
+  def write(target: File, xsd: String, elems: Elem, source: Option[(File, Map[String, String])] = None): File = {
     if (target.exists) target.delete
-    if (source.exists) {
-      IO.write(target, injectProperties(source.getCanonicalPath, props))
+    source.foreach { t =>
+      val (f, props) = t
+      if (f.exists) IO.write(target, injectProperties(f.getCanonicalPath, props))
     }
     if (!target.getParentFile.exists) target.getParentFile.mkdirs
     XML.save(target.getCanonicalPath, elems, "UTF-8", true, null)

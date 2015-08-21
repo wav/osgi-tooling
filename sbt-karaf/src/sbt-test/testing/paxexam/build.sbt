@@ -1,15 +1,17 @@
-import com.typesafe.sbt.osgi.SbtOsgi, SbtOsgi.OsgiKeys._
-import wav.devtools.sbt.karaf.SbtKaraf
+import wav.devtools.sbt.karaf.{KarafDefaults, SbtKaraf}, SbtKaraf.autoImport._
+import com.typesafe.sbt.osgi.SbtOsgi, SbtOsgi.autoImport._
+import KarafKeys._
+import KarafPackagingKeys._
 
-enablePlugins(SbtKaraf)
+enablePlugins(SbtOsgi, SbtKaraf)
 
-SbtOsgi.osgiSettings
+version := "0.1.0.SNAPSHOT"
 
-SbtKaraf.paxSettings
+KarafDefaults.paxSettings
 
-importPackage := Seq(
+OsgiKeys.importPackage := Seq(
 	"org.osgi.framework",
 	"scala",
 	"scala.*")
 
-version := "0.1.0.SNAPSHOT"
+updateOptions := updateOptions.value.withCachedResolution(true)

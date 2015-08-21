@@ -2,4 +2,9 @@ import wav.devtools.sbt.karaf.Properties
 
 Properties.pluginSettings
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.7.0")
+lazy val plugins = (project in file("."))
+  .dependsOn(sbtOsgi)
+
+def sbtOsgi = uri("git://github.com/sbt/sbt-osgi.git")
+
+updateOptions := updateOptions.value.withCachedResolution(true)

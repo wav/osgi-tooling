@@ -1,13 +1,15 @@
 package wav.devtools.sbt.karaf.packaging
 
+import org.osgi.framework.Version
 import sbt.Keys._
 import sbt._
 import wav.devtools.sbt.karaf.packaging.model.FeaturesXml.{Bundle, Feature, FeatureRef}
-import wav.devtools.sbt.karaf.packaging.model.{FeaturesArtifact, FeaturesRepository, MavenUrl}
+import wav.devtools.sbt.karaf.packaging.model.{FeaturesArtifact, FeatureRepository, MavenUrl}
 
-import scala.collection.mutable
+import scala.annotation.tailrec
 
 private[packaging] object Resolution {
+
   import model.FeaturesArtifactData.canBeFeaturesRepository
 
   val featuresArtifactFilter = artifactFilter(name = "*", `type` = "xml", extension = "xml", classifier = "features")
@@ -17,7 +19,7 @@ private[packaging] object Resolution {
   def emptyReport(module: ModuleID): ModuleReport =
     ModuleReport(module, (module.explicitArtifacts.map((_, null))), Nil)
 
-  def resolveFeaturesRepository(logger: Logger, mr: ModuleReport): Either[String, Seq[FeaturesRepository]] = {
+  def resolveFeaturesRepository(logger: Logger, mr: ModuleReport): Either[String, Seq[FeatureRepository]] = {
     val fas = for {
       (a, f) <- mr.artifacts
       if (canBeFeaturesRepository(a))
@@ -31,7 +33,7 @@ private[packaging] object Resolution {
     })
   }
 
-  def resolveAllFeaturesRepositoriesTask: SbtTask[UpdateReport => Set[FeaturesRepository]] = Def.task {
+  def resolveAllFeatureRepositoriesTask: SbtTask[UpdateReport => Set[FeatureRepository]] = Def.task {
     val logger = streams.value.log
     ur => {
       val fas = ur.filter(featuresArtifactFilter)
@@ -44,94 +46,76 @@ private[packaging] object Resolution {
     }
   }
 
-  def toRefs(m: Map[String, String]): Set[FeatureRef] = {
-    m.map(e => FeatureRef(e._1, {
-      require(e._2 != null && e._2.trim.length > 0, s"The referenced feature ${e._1} does not have a valid version identifier, use `*` to specify any version.")
-      if (e._2 == "*") None else Some(e._2)
-    })).toSet
-  }
-
-  def selectNewest(requested: Set[FeatureRef], collection: Set[FeatureRef]): Set[FeatureRef] = {
-    val selection = mutable.Set[FeatureRef]()
-    for (ref <- requested) {
-      val matches = collection.filter(_.name == ref.name).toArray.sorted.toSeq
-      if (ref.version.isDefined && matches.contains(ref)) selection += ref
-      else if (matches.nonEmpty) selection += matches.last
-    }
-    selection.toSet
-  }
-
-  def requireAllFeatures(required: Map[String, String], repositories: Set[FeaturesRepository]): Unit = {
-    val available = repositories.flatMap(_.features)
-    val requiredRefs = toRefs(required)
-
-    val selected = selectNewest(requiredRefs, available)
-    val missing = requiredRefs.map(_.name) -- selected.map(_.name)
-
-    var reportItems = Seq.empty[String]
-    if (missing.nonEmpty) reportItems = reportItems :+ s"missing dependencies: ${missing.mkString(",")}"
-
-    // TODO: recurse.
-    val transitive = selectTransitiveDependencies(requiredRefs, repositories)
-    val selectedTransitive = selectNewest(transitive, available)
-    val transitiveMissing = transitive.map(_.name) -- selectedTransitive.map(_.name)
-    if (transitiveMissing.nonEmpty) reportItems = reportItems :+ s"missing transitive dependencies: ${transitiveMissing.mkString(",")}"
-
-    if (reportItems.nonEmpty)
-      sys.error(
-        "The feature repositories defined in the build do not contain all required features. You may need to add more feature repositories to your build." +
-          reportItems.mkString("\n| - ", "\n| - ", "").stripMargin)
-  }
-
-  def selectTransitiveDependencies(required: Set[FeatureRef], repositories: Set[FeaturesRepository]): Set[FeatureRef] =
-    for {
+  def resolveRequiredFeatures(required: Set[FeatureRef], repositories: Set[FeatureRepository]): Either[Set[FeatureRef], Set[Feature]] = {
+    val allFeatures = for {
       fr <- repositories
-      dep <- selectNewest(required, fr.features) // TODO: review
       f <- fr.featuresXml.elems.collect { case f: Feature => f }
-      if (f.toRef.name == dep.name)
-      tranDep <- f.deps.collect { case ref: FeatureRef => ref }
-    } yield tranDep
-
-  def filterFeatureRepositories(required: Map[String, String], repositories: Set[FeaturesRepository]): Set[FeaturesRepository] = {
-    val available = repositories.flatMap(_.features)
-    val requiredRefs = toRefs(required)
-    val selected = selectNewest(requiredRefs, available)
-    val selectedTransitive = selectNewest(selectTransitiveDependencies(requiredRefs, repositories), available)
-    val all = selected ++ selectedTransitive
-
-    repositories.map { fr =>
-      val filtered = fr.featuresXml.elems.flatMap {
-        case f: Feature => if (all.map(_.name).contains(f.toRef.name)) Some(f) else None
-        case e => Some(e)
-      }
-      val newXml = fr.featuresXml.copy(elems = filtered)
-      new FeaturesRepository(fr.module, fr.artifact, fr.file, newXml)
-    }
+    } yield f
+    resolveFeatures(required, allFeatures)
   }
 
-  // INCOMPLETE
-  def selectProjectBundles(ur: UpdateReport, repositories: Set[FeaturesRepository]): Set[Bundle] = {
+  def toBundle(m: ModuleID, a: Artifact) =
+    Bundle(MavenUrl(m.organization, a.name, m.revision, Some(a.`type`), a.classifier).toString)
+
+  def selectProjectBundles(ur: UpdateReport, features: Set[Feature]): Set[Bundle] = {
+    val mavenUrls = features
+      .flatMap(_.bundles)
+      .collect { case Bundle(MavenUrl(url)) => url }
     val cr = ur.filter(bundleArtifactFilter).configuration("runtime").get
-    val mavenUrls = (for {
-      mr <- cr.modules
-      m = mr.module
-      (a, _) <- mr.artifacts
-      fr <- repositories
-      b <- fr.dependencies.collect { case Bundle(url) => MavenUrl.unapply(url) }.flatten
-      if (b.groupId == m.organization && 
-          b.artifactId == a.name && 
-          b.version == m.revision &&
-          b.`type` == a.`type` &&
-          b.classifer == a.classifier) // TODO: type
-    } yield b).toSet
+    val inFeatures =
+      for {
+        mr <- cr.modules
+        m = mr.module
+        (a, _) <- mr.artifacts
+        url <- mavenUrls
+        if (url.groupId == m.organization && url.artifactId == m.name)
+      } yield (m, a)
+    (for {
+        mr <- cr.modules
+        m = mr.module
+        (a, _) <- mr.artifacts
+        if (!inFeatures.contains((m,a)))
+      } yield toBundle(m,a)).toSet
+  }
 
-    val allAsMavenUrls = (for {
-      mr <- cr.modules
-      m = mr.module
-      (a, _) <- mr.artifacts
-    } yield MavenUrl(m.organization, a.name, m.revision, Option(a.`type`), a.classifier)).toSet
+  def satisfies(constraint: FeatureRef, feature: Feature): Boolean =
+    constraint.name == feature.name && (
+      constraint.version.isEmpty || {
+        var vr = constraint.version.get
+        !vr.isEmpty() && (feature.version == Version.emptyVersion || vr.includes(feature.version))
+      })
 
-    (allAsMavenUrls -- mavenUrls).map(url => Bundle(url.toString))
+  def selectFeatureDeps(ref: FeatureRef, fs: Set[Feature]): Set[FeatureRef] =
+    fs.filter(satisfies(ref, _)).flatMap(_.deps).collect { case dep: FeatureRef => dep }
+
+  def selectFeatures(requested: Set[FeatureRef], fs: Set[Feature]): Either[Set[FeatureRef], Set[Feature]] = {
+    val unsatisfied = for {
+      constraint <- requested
+      if (fs.forall(f => !satisfies(constraint, f)))
+    } yield constraint
+    if (unsatisfied.nonEmpty) Left(unsatisfied)
+    else Right(
+      for {
+        constraint <- requested
+        feature <- fs
+        if (satisfies(constraint, feature))
+      } yield feature
+    )
+  }
+
+  @tailrec
+  def resolveFeatures(requested: Set[FeatureRef], fs: Set[Feature], resolved: Set[Feature] = Set.empty): Either[Set[FeatureRef], Set[Feature]] = {
+    if (requested.isEmpty) return Right(resolved)
+    val result = selectFeatures(requested, fs)
+    if (result.isLeft) result
+    else {
+      val Right(selection) = result
+      val selectedRefs = selection.map(_.toRef)
+      val resolvedRefs = resolved.map(_.toRef)
+      val resolved2 = selection ++ resolved
+      val unresolved = selectedRefs.flatMap(selectFeatureDeps(_, fs)) -- resolvedRefs
+      resolveFeatures(unresolved, fs, resolved2)
+    }
   }
 
 }

@@ -1,6 +1,6 @@
 ## sbt-karaf-packaging
 
-Adds `SbtPackagingKaraf.featuresSettings` to the build which is for creating a features.xml artifact.
+Creates a features.xml artifact.
 
 View the available settings in:
   >[Keys.scala](sbt-karaf-packaging/src/main/scala/wav/devtools/sbt/karaf/packaging/Keys.scala)
@@ -10,38 +10,40 @@ View the available settings in:
 
 build.sbt
 ```scala
-import wav.devtools.sbt.karaf.packaging.{SbtKarafPackaging, FeaturesRepositoryID}
+import wav.devtools.sbt.karaf.packaging.SbtKarafPackaging
 import SbtKarafPackaging.autoImport._
+import KarafPackagingKeys._
 
-enablePlugins(SbtKarafPackaging)
+enablePlugins(kp.SbtKarafPackaging)
 
-featuresRequired := Map("jolokia" -> "1.3.0", "scr" -> "*") // version ranges and None not implemented.
-
-libraryDependencies += "org.slf4j" % "osgi-over-slf4j" % "1.7.10"
+featuresRequired := Map("jolokia" -> "1.3.0", "scr" -> "*")
 
 libraryDependencies ++= Seq(
-  FeaturesRepositoryID("org.apache.karaf.features", "standard", "4.0.0"),
-  FeaturesRepositoryID("org.apache.karaf.features", "enterprise", "4.0.0"))
+  "org.slf4j" % "osgi-over-slf4j" % "1.7.10",
+  FeatureID("org.apache.karaf.features", "standard", "4.0.0"),
+  FeatureID("org.ops4j.pax.web", "pax-web-features", "4.1.4"))
 ```
 
 When you run the generate features.xml task:
 
 ```bash
-sbt> generateFeaturesFile
-[info] Some($HOME/Repositories/github/wav/osgi-tooling/sbt-karaf-packaging/src/sbt-test/packaging/features/target/scala-2.10/features.xml
+> show featuresFile
+[info] Some({baseDir}/target/scala-2.10/features.xml)
 ```
 
 A features file like the following will be generated:
 
 `{baseDir}/target/scala-2.10/features.xml`
 
-```
-<?xml version="1.0" encoding="UTF-8"?><features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="features">
-  <feature name="features" version="0.1.0.SNAPSHOT">
-    <bundle>mvn:org.scala-lang/scala-library/2.10.5/jar</bundle>
-    <bundle>file:/Users/wassim/Repositories/github/wav/osgi-tooling/sbt-karaf-packaging/src/sbt-test/packaging/features/target/scala-2.10/features_2.10-0.1.0.SNAPSHOT.jar</bundle>
-    <feature version="1.3.0">jolokia</feature>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="my-project">
+  <repository>mvn:org.apache.karaf.features/standard/4.0.0/xml/features</repository>
+  <feature version="0.1.0.SNAPSHOT" name="my-project">
     <feature>scr</feature>
+    <bundle>mvn:org.scala-lang/scala-library/2.10.5/jar</bundle>
+    <bundle>file:/{baseDir}/target/scala-2.10/my-project.10-0.1.0.SNAPSHOT.jar</bundle>
+    <feature version="1.3.0">jolokia</feature>
     <bundle>mvn:org.slf4j/osgi-over-slf4j-1.7.10/1.7.10/bundle</bundle>
   </feature>
 </features>
@@ -49,7 +51,7 @@ A features file like the following will be generated:
 
 ### Modifying the features file
 
-```
+```scala
 import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
 
 lazy val projectA = project.in(file("A"))
@@ -75,12 +77,16 @@ lazy val root = project.in(file("."))
       })
 ```
 
+### Other settings
+
+> BYO features file
+> `featuresFile := Some((resourceDirectory in Compile).value / "features.xml")`
+
 #### TODO
 
 - Add bundles from non `mvn:` style urls to project feature
 - Read and add configuration elements in a features file
 - Report on bundles that cannot be added to the project feature with a suggestion
-- Only add bundles that are not available in feature dependencies to the project feature
 - Generate a different feature file based on configurations so that bundle URL's aren't pointing to the local file system.
         Eg. do `<bundle>file://...</bundle>` and `<bundle>mvn:...</bundle>`
         Work around: override the setting `featuresProjectBundle`

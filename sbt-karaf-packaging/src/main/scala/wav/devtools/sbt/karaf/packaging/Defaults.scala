@@ -1,39 +1,54 @@
 package wav.devtools.sbt.karaf.packaging
 
+import org.osgi.framework.Version
 import sbt.Keys._
 import sbt._
-import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
-import wav.devtools.sbt.karaf.packaging.model.{DependenciesProperties, FeaturesXml}
+import wav.devtools.sbt.karaf.packaging.model._, FeaturesXml._
 
-object KarafPackagingDefaults extends Import {
+object KarafPackagingDefaults {
+
+  import KarafPackagingKeys._
 
   lazy val featuresXmlTask = Def.task {
-    new FeaturesXml(name.value, Some(version.value), Seq(featuresProjectFeature.value))
+    new FeaturesXml(name.value, featuresRepositories.value.toSeq :+ featuresProjectFeature.value)
   }
 
-  lazy val generateFeaturesFileTask = Def.task {
-    val featuresTarget = crossTarget.value / "features.xml"
-    val featuresSource = (resourceDirectory in Compile).value / "features.xml"
+  lazy val featuresFileTask = Def.task {
     Util.write(
-      featuresTarget,
-      featuresSource,
+      crossTarget.value / "features.xml",
       featuresXsd,
-      Map.empty,
       makeFeaturesXml(featuresXml.value))
   }
 
-  lazy val featuresRepositoriesTask = Def.task {
-    val resolveAll = Resolution.resolveAllFeaturesRepositoriesTask.value
+  private lazy val allFeaturesRepositories   = taskKey[Set[FeatureRepository]]("All resolved features repositories")
+
+  private lazy val allFeaturesRepositoriesTask = Def.task {
+    val resolveAll = Resolution.resolveAllFeatureRepositoriesTask.value
     resolveAll(update.value)
   }
 
-  lazy val featuresSelectedTask = Def.task {
-    val repos = featuresRepositories.value
-    val feats = featuresRequired.value
-    Resolution.requireAllFeatures(feats, repos)
-    val filtered = Resolution.filterFeatureRepositories(feats, repos)
-    filtered.flatMap(_.featuresXml.elems collect { case f: Feature => f })
+  lazy val featuresRepositoriesTask = Def.task {
+    val constraints = featuresRequired.value.map(toRef).toSet
+    val repos = allFeaturesRepositories.value
+    for {
+      fr <- repos
+      f <- fr.features
+      c <- constraints
+      if (Resolution.satisfies(c,f))
+    } yield Repository(fr.url)
   }
+
+  lazy val featuresSelectedTask = Def.task {
+    val constraints = featuresRequired.value.map(toRef).toSet
+    val repos = allFeaturesRepositories.value
+    Resolution.resolveRequiredFeatures(constraints, repos)
+  }
+
+  private def toRef(t: (String, String)): FeatureRef =
+    featureRef(t._1, {
+      require(t._2 != null && t._2.trim.length > 0, s"The referenced feature ${t._1} does not have a valid version identifier, use `*` to specify any version.")
+      if (t._2 == "*") Version.emptyVersion.toString() else t._2
+    })
 
   lazy val featuresProjectBundleTask = Def.task {
     val (_, f) = (packagedArtifact in(Compile, packageBin)).value
@@ -41,16 +56,24 @@ object KarafPackagingDefaults extends Import {
   }
 
   lazy val featuresProjectFeatureTask = Def.task {
-    val feats = featuresRequired.value
-    val repos = featuresRepositories.value
-    val filtered = Resolution.filterFeatureRepositories(feats, repos)
-    val bundles = Resolution.selectProjectBundles(update.value, filtered)
-    val deps = Set.empty[FeatureDependency] + 
-      featuresProjectBundle.value ++ 
-      bundles ++ 
-      Resolution.toRefs(feats)
-    Feature(name.value, Some(version.value), deps)
-  }.dependsOn(featuresSelected)
+    val features = featuresRequired.value.map(toRef)
+    val selected = featuresSelected.value
+    selected match {
+      case Left(unresolved) => sys.error(s"The following features could not be resolved: $unresolved")
+      case Right(resolved) =>
+        val duplicates = resolved.toSeq
+          .map(_.name)
+          .groupBy(identity)
+          .mapValues(_.size)
+          .filter(_._2 > 1)
+          .keys
+        if (duplicates.nonEmpty)
+          sys.error(s"Could not select a unique feature for the following: $duplicates")
+    }
+    val Right(resolved) = selected
+    val bundles = Resolution.selectProjectBundles(update.value, resolved) + featuresProjectBundle.value
+    feature(name.value, version.value, bundles ++ features)
+  }
 
   lazy val generateDependsFileTask = Def.task {
     val f = target.value / "dependencies.properties"
@@ -72,16 +95,17 @@ object KarafPackagingDefaults extends Import {
   lazy val featuresPackagedArtifactsTask: SbtTask[Map[
     Artifact, File]] = Def.task {
     val pas = packagedArtifacts.value
-    generateFeaturesFile.value
-      .map(f => pas.updated(FeaturesRepositoryID.Artifact(name.value), f))
+    featuresFile.value
+      .map(f => pas.updated(Artifact(name.value, "xml", "xml", "features"), f))
       .getOrElse(pas)
   }
 
   lazy val featuresSettings: Seq[Setting[_]] = Seq(
     featuresXml := featuresXmlTask.value,
-    generateFeaturesFile := Some(generateFeaturesFileTask.value),
+    featuresFile := Some(featuresFileTask.value),
     featuresRequired := Map.empty,
     featuresRepositories := featuresRepositoriesTask.value,
+    allFeaturesRepositories := allFeaturesRepositoriesTask.value,
     featuresSelected := featuresSelectedTask.value,
     featuresProjectBundle := featuresProjectBundleTask.value,
     featuresProjectFeature := featuresProjectFeatureTask.value,
