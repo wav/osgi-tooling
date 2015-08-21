@@ -14,7 +14,7 @@ import wav.devtools.sbt.karaf.packaging.SbtKarafPackaging
 import SbtKarafPackaging.autoImport._
 import KarafPackagingKeys._
 
-enablePlugins(kp.SbtKarafPackaging)
+enablePlugins(SbtKarafPackaging)
 
 featuresRequired := Map("jolokia" -> "1.3.0", "scr" -> "*")
 

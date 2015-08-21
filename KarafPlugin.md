@@ -7,8 +7,8 @@ Extends the [Karaf Packaging Plugin](KarafPackagingPlugin.md) with the additiona
      + An alternative to dumping bundles in the `/deploy` folder.
 
 View the available settings in:
-  >[Keys.scala](sbt-karaf-packaging/src/main/scala/wav/devtools/sbt/karaf/Keys.scala)
-  >[Defaults.scala](sbt-karaf-packaging/src/main/scala/wav/devtools/sbt/karaf/Defaults.scala)
+  >[Keys.scala](sbt-karaf/src/main/scala/wav/devtools/sbt/karaf/Keys.scala)
+  >[Defaults.scala](sbt-karaf/src/main/scala/wav/devtools/sbt/karaf/Defaults.scala)
 
 #### Quick start
 
