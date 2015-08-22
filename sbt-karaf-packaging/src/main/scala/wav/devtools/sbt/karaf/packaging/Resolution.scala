@@ -54,8 +54,11 @@ private[packaging] object Resolution {
     resolveFeatures(required, allFeatures)
   }
 
-  def toBundle(m: ModuleID, a: Artifact) =
-    Bundle(MavenUrl(m.organization, a.name, m.revision, Some(a.`type`), a.classifier).toString)
+  private val excludeBundleTypes = Set("bundle", "jar")
+  def toBundle(m: ModuleID, a: Artifact) = {
+    val t = Some(a.`type`).filterNot(excludeBundleTypes.contains)
+    Bundle(MavenUrl(m.organization, m.name, m.revision, t, a.classifier).toString)
+  }
 
   def selectProjectBundles(ur: UpdateReport, features: Set[Feature]): Set[Bundle] = {
     val mavenUrls = features

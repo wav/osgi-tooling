@@ -1,6 +1,6 @@
 package wav.devtools.sbt.karaf.examples.refreshbundle
 
-trait PrinterSerice {
+trait PrinterService {
 
   def pause(): Unit
 

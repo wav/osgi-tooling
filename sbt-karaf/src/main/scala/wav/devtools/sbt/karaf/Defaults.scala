@@ -1,25 +1,75 @@
 package wav.devtools.sbt.karaf
 
+import java.util.Date
+import java.util.concurrent.atomic.AtomicReference
+import javax.management.remote.JMXConnector
+
 import sbt.Keys._
 import sbt._
 import wav.devtools.karaf.mbeans._, MBeanExtensions._
+import KarafKeys._
+import packaging.KarafPackagingKeys._
+
+import scala.util.{Failure, Success}
 
 object KarafDefaults {
 
-  import KarafKeys._
-  import packaging.KarafPackagingKeys._
+//  lazy val lazy val karafDistribution      = taskKey[Option[File]]("Karaf distribution defined in library dependencies")      = taskKey[Option[File]]("Karaf distribution defined in library dependencies")
+//
+//  libraryDependencies += Dependencies.Karaf.assembly
+//
+//  lazy val karafDistributionTask = Def.task {
+//    val km = Dependencies.Karaf.assembly
+//    (for {
+//      ka <- km.explicitArtifacts
+//      if (ka.`type` == "tar.gz")
+//      cr <- update.value.configurations
+//      mr <- cr.modules
+//      m = mr.module
+//      if (m.organization == km.organization &&
+//          m.name == km.name)
+//      (a, f) <- mr.artifacts
+//      if (ka.name == a.name &&
+//          ka.`type` == a.`type`)
+//    } yield f).headOption
+//  }
 
   lazy val karafBundleArgsSetting = Def.setting(BundleStartArgs(organization.value + "." + name.value))
 
   lazy val karafContainerArgsSetting = Def.setting(ContainerArgs.Default)
 
-  lazy val karafContainerServicesTask = Def.task {
-    val containerArgs = karafContainerArgs.value
-    MBeanConnection(karafContainerArgs.value).services
+  private val karafRMIConnection = settingKey[AtomicReference[Option[JMXConnector]]]("karaf RMI connection")
+
+  def closeKarafConnection(ref: AtomicReference[Option[JMXConnector]]): Unit =
+      ref.getAndSet(None).foreach(_.close())
+
+  def getKarafServices(args: ContainerArgs, ref: AtomicReference[Option[JMXConnector]]): MBeanServices = {
+    var c = ref.get()
+    if (c.isDefined) c.get.services
+    else {
+      val c = MBeanConnection(args) match {
+        case Failure(ex) =>
+          ref.set(None)
+          throw ex
+        case Success(c) =>
+          ref.set(Some(c))
+          c
+      }
+      c.services
+    }
+  }
+
+  lazy val karafResetServerTask = Def.task {
+    val ref = karafRMIConnection.value
+    val services = getKarafServices(karafContainerArgs.value, ref)
+    val system = handled(services.System)
+    system.rebootCleanAll("now")
+    closeKarafConnection(ref)
   }
 
   lazy val karafRefreshBundleTask = Def.task {
-    val bundles = handled(karafContainerServices.value.Bundles)
+    val services = getKarafServices(karafContainerArgs.value, karafRMIConnection.value)
+    val bundles = handled(services.Bundles)
     val startArgs = karafBundleStartArgs.value
     val n = startArgs.name
     val original = {
@@ -44,7 +94,8 @@ object KarafDefaults {
     val ff = featuresFile.value
     require(ff.isDefined, "`featuresFile` must produce a features file")
     val repo = "file:" + ff.get.getCanonicalPath
-    val features = handled(karafContainerServices.value.FeaturesService)
+    val services = getKarafServices(karafContainerArgs.value, karafRMIConnection.value)
+    val features = handled(services.FeaturesService)
     if (!features.repoRefresh(repo)) sys.error("Couldn't add repository, " + repo)
     if (!features.install(name.value, version.value, false)) sys.error("Couldn't install project feature")
   }
@@ -53,7 +104,8 @@ object KarafDefaults {
     val ff = featuresFile.value
     require(ff.isDefined, "`featuresFile` must produce a features file")
     val repo = "file:" + ff.get.getCanonicalPath
-    val features = handled(karafContainerServices.value.FeaturesService)
+    val services = getKarafServices(karafContainerArgs.value, karafRMIConnection.value)
+    val features = handled(services.FeaturesService)
     if (!features.uninstall(name.value, version.value)) sys.error("Couldn't uninstall project feature")
     if (!features.repoRemove(repo)) sys.error("Couldn't remove repository, " + repo)
   }
@@ -66,7 +118,7 @@ object KarafDefaults {
   lazy val paxSettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= {
       import wav.devtools.sbt.karaf.Dependencies._
-      Seq(paxExam, paxKaraf, paxAether, javaxInject, paxJunit, junit, junitInterface, osgiCore, Karaf.`package`)
+      Seq(paxExam, paxKaraf, paxAether, javaxInject, paxJunit, junit, junitInterface, osgiCore, Karaf.assembly)
     },
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"), // for junit-interface / paxExam
     fork in Test := true, // IMPORTANT, forking ensures that the container starts with the correct classpath
@@ -78,9 +130,12 @@ object KarafDefaults {
     })
 
   lazy val karafSettings: Seq[Setting[_]] = Seq(
+    karafRMIConnection := new AtomicReference(None),
+    karafResetServer := karafResetServerTask.value,
+    karafStatus := ???,
+//    karafDistribution := karafDistributionTask.value,
     karafBundleStartArgs := karafBundleArgsSetting.value,
     karafContainerArgs := karafContainerArgsSetting.value,
-    karafContainerServices := karafContainerServicesTask.value,
     karafDeployFeature := karafDeployFeatureTask.value,
     karafUndeployFeature := karafUndeployFeatureTask.value,
     karafRefreshBundle := karafRefreshBundleTask.value,

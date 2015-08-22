@@ -1,13 +1,12 @@
 package wav.devtools.sbt.karaf.examples.refreshbundle
 
 import org.osgi.framework.{BundleContext, BundleActivator}
-import wav.devtools.sbt.karaf.examples.refreshbundle.impl.PrinterService
 
-class Activator extends impl.PrinterService with BundleActivator {
+class Activator extends BundleActivator {
 
   @throws[Exception]
   def start(context: BundleContext): Unit = {
-    val svc = new PrinterService
+    val svc = new impl.PrinterService
     context.
       registerService(classOf[PrinterService].getName, svc, null)
     svc.resume

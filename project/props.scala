@@ -39,7 +39,6 @@ object Dependencies {
   val osgiCore       = "org.osgi" % "org.osgi.core" % "6.0.0"
   val scalaTest      = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
-
   /**
    * Pax exam dependencies: // https://ops4j1.jira.com/wiki/display/PAXEXAM4/Karaf+Container
    */
@@ -56,7 +55,7 @@ object Dependencies {
 
     val Version = "4.0.0"
 
-    val `package` = (("org.apache.karaf" % "apache-karaf" % Version)
+    val assembly = (("org.apache.karaf" % "apache-karaf" % Version)
       .artifacts(Artifact("apache-karaf", `type` = "tar.gz", extension = "tar.gz"))
       .intransitive)
 
@@ -64,9 +63,9 @@ object Dependencies {
       ModuleID(o, n, v, isTransitive = false, explicitArtifacts = Seq(Artifact(a getOrElse s"$n", "xml", "xml", "features")))
 
     // when this is changed, update the the sbt-karaf-packaging tests
-    val standardFeatures = featureID("org.apache.karaf.features", "standard", Version)
+    val standardFeatures   = featureID("org.apache.karaf.features", "standard", Version)
     val enterpriseFeatures = featureID("org.apache.karaf.features", "enterprise", Version)
-    val paxWebFeatures = featureID("org.ops4j.pax.web", "pax-web-features", "4.1.4")
+    val paxWebFeatures     = featureID("org.ops4j.pax.web", "pax-web-features", "4.1.4")
 
     lazy val common = Seq(
       slf4j,
@@ -74,16 +73,21 @@ object Dependencies {
       Karaf.bundle,
       Karaf.config,
       Karaf.features,
-      Karaf.instance)
+      Karaf.instance,
+      Karaf.system)
 
     // Karaf's MBean dependencies, see: http://karaf.apache.org/manual/latest/users-guide/monitoring.html
-    val config = kmodule("config")
+
     // {{org.apache.karaf:type=config,name=*}}: management of the OSGi bundles.
-    val bundle = kmodule("bundle")
+    val config   = kmodule("config")
     // {{org.apache.karaf:type=bundle,name=*}}: management of the configurations.
-    val features = kmodule("features")
+    val bundle   = kmodule("bundle")
     // {{org.apache.karaf:type=feature,name=*}}: management of the Apache Karaf features.
-    val instance = kmodule("instance") // {{org.apache.karaf:type=instance,name=*}}: management of the instances.
+    val features = kmodule("features")
+    // {{org.apache.karaf:type=instance,name=*}}: management of the instances.
+    val instance = kmodule("instance")
+    // {{org.apache.karaf:type=system,name=*}}: management of the instances.
+    val system = kmodule("system")
 
     private def kmodule(module: String) =
       s"org.apache.karaf.$module" % s"org.apache.karaf.$module.core" % Version withSources() notTransitive()

@@ -24,20 +24,16 @@ object KarafPackagingKeys {
 
 }
 
-trait Import {
-
-  import KarafPackagingDefaults._
-
-  val KarafPackagingKeys = wav.devtools.sbt.karaf.packaging.KarafPackagingKeys
-  val FeatureID          = wav.devtools.sbt.karaf.packaging.FeatureID _
-
-  def defaultKarafPackagingSettings: Seq[Setting[_]] =
-    featuresSettings
-}
-
 object SbtKarafPackaging extends AutoPlugin {
 
-  val autoImport = new Import {}
+  object autoImport extends PluginSyntax {
+
+    val KarafPackagingKeys = wav.devtools.sbt.karaf.packaging.KarafPackagingKeys
+
+    def defaultKarafPackagingSettings: Seq[Setting[_]] =
+      KarafPackagingDefaults.featuresSettings
+
+  }
 
   override def projectSettings =
     autoImport.defaultKarafPackagingSettings

@@ -3,7 +3,15 @@ import com.typesafe.sbt.osgi.SbtOsgi, SbtOsgi.autoImport._
 import KarafKeys._
 import KarafPackagingKeys._
 
+featuresRequired := Map("log" -> "*")
+
+libraryDependencies ++= Seq(
+    "org.slf4j" % "osgi-over-slf4j" % "1.7.10",
+    FeatureID("org.apache.karaf.features", "standard", "4.0.0"))
+
 enablePlugins(SbtOsgi, SbtKaraf)
+
+osgiSettings
 
 name := "refreshbundle"
 

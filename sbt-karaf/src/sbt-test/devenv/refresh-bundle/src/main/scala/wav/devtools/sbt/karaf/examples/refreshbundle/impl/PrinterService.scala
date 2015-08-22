@@ -2,19 +2,24 @@ package wav.devtools.sbt.karaf.examples.refreshbundle.impl
 
 import wav.devtools.sbt.karaf.examples.{refreshbundle => api}
 
-class PrinterService extends api.PrinterSerice {
+import org.slf4j.LoggerFactory
+
+class PrinterService extends api.PrinterService {
+
+  private val logger = LoggerFactory.getLogger(classOf[PrinterService])
 
   private var _active = false
 
-  def pause(): Unit =
+  def pause(): Unit = {
+    logger.info("PrinterService has been paused")
     _active = false
+  }
 
   def resume(): Unit = {
     _active = true
-    var n = 0
+    logger.info("PrinterService has started")
     while(_active) {
-      println(s"PrinterService active for $n seconds")
-      n += 1
+      logger.info("PrinterService is active")
       Thread.sleep(1000)
     }
   }
