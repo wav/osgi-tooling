@@ -82,6 +82,9 @@ lazy val root = project.in(file("."))
 > BYO features file
 > `featuresFile := Some((resourceDirectory in Compile).value / "features.xml")`
 
+> Add the dependencies of `featuresRequired` to `libraryDepencencies`. See settings for more info.
+> `KarafPackagingKeys.featuresAddDependencies := true`
+
 #### TODO
 
 - Add bundles from non `mvn:` style urls to project feature

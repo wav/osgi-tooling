@@ -2,21 +2,14 @@ package wav.devtools.sbt.karaf.packaging.model
 
 import java.io.File
 
-import org.apache.ivy.core.module.descriptor.{Artifact => IvyArtifact, DefaultArtifact}
-import org.apache.ivy.core.module.id.ModuleRevisionId
 import wav.devtools.sbt.karaf.packaging.Util
 import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
 
-import scala.collection.JavaConversions._
-import scala.collection.mutable
-import scala.collection.mutable.{Set => MSet}
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
 // An artifact in a features file.
 sealed trait FeaturesArtifactData {
-
-  import FeaturesArtifactData._
 
   val module  : sbt.ModuleID
   val artifact: sbt.Artifact
@@ -32,23 +25,6 @@ sealed trait FeaturesArtifactData {
   lazy val mavenUrl: MavenUrl =
     MavenUrl(module.organization, artifact.name, module.revision, Some(artifact.extension), artifact.classifier)
 
-  private[packaging] lazy val ivyArtifact: Option[IvyArtifact] = {
-    val extra = mutable.Map[String, String]()
-    artifact.classifier.foreach(extra.put("classifier", _))
-    val mrid = ModuleRevisionId.newInstance(
-      mavenUrl.groupId,
-      mavenUrl.artifactId,
-      mavenUrl.version,
-      extra)
-    val a: IvyArtifact = new DefaultArtifact(mrid, null, mavenUrl.artifactId, artifact.`type`, artifact.extension)
-    url match {
-      case Scheme("mvn") => Some(a)
-      case Scheme("https") | Scheme("http") | Scheme("file") =>
-        Some(new DefaultArtifact(a.getId(), null, sbt.url(url), false))
-      case _ => None
-    }
-  }
-
   private [packaging] def equalsData(that: FeaturesArtifactData): Boolean =
     this.module == that.module && this.artifact == that.artifact
 
@@ -61,10 +37,6 @@ object FeaturesArtifactData {
 
   private [packaging] def diff(as: Seq[FeaturesArtifactData], bs: Seq[FeaturesArtifactData]): Set[FeaturesArtifactData] =
     as.filterNot(a => bs.exists(b => a equalsData b)).toSet
-
-  private val Scheme = """(mvn|https?|file).*""".r
-
-  def apply(module: sbt.ModuleID, artifact: sbt.Artifact, file: Option[File]): FeaturesArtifactData = ???
 
   def canBeFeaturesRepository(artifact: sbt.Artifact): Boolean =
     artifact.extension == "xml" && artifact.classifier == Some("features")
@@ -90,7 +62,7 @@ object FeaturesArtifactData {
 
 }
 
-case class FeaturesArtifact(module: sbt.ModuleID, artifact: sbt.Artifact, file: Option[File], from: Option[(String, Option[String])])
+case class FeaturesArtifact(module: sbt.ModuleID, artifact: sbt.Artifact, file: Option[File], from: Option[(String, Option[String])] = None)
   extends FeaturesArtifactData {
 
   import FeaturesArtifactData._

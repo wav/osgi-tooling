@@ -3,21 +3,17 @@ package wav.devtools.sbt.karaf.packaging
 import org.osgi.framework.Version
 import sbt.Keys._
 import sbt._
-import wav.devtools.sbt.karaf.packaging.model.FeaturesXml.{Bundle, Feature, FeatureRef}
-import wav.devtools.sbt.karaf.packaging.model.{FeaturesArtifact, FeatureRepository, MavenUrl}
+import wav.devtools.sbt.karaf.packaging.model._, FeaturesXml._
 
 import scala.annotation.tailrec
 
 private[packaging] object Resolution {
-
+  
   import model.FeaturesArtifactData.canBeFeaturesRepository
 
   val featuresArtifactFilter = artifactFilter(name = "*", `type` = "xml", extension = "xml", classifier = "features")
 
   val bundleArtifactFilter = artifactFilter(name = "*", `type` = "jar" | "bundle", extension = "*", classifier = "*")
-
-  def emptyReport(module: ModuleID): ModuleReport =
-    ModuleReport(module, (module.explicitArtifacts.map((_, null))), Nil)
 
   def resolveFeaturesRepository(logger: Logger, mr: ModuleReport): Either[String, Seq[FeatureRepository]] = {
     val fas = for {
@@ -54,11 +50,23 @@ private[packaging] object Resolution {
     resolveFeatures(required, allFeatures)
   }
 
-  private val excludeBundleTypes = Set("bundle", "jar")
-  def toBundle(m: ModuleID, a: Artifact) = {
-    val t = Some(a.`type`).filterNot(excludeBundleTypes.contains)
+  def toMavenUrl(m: ModuleID, a: Artifact): MavenUrl =
+    MavenUrl(m.organization, m.name, m.revision, Some(a.`type`), a.classifier)
+
+  private val bundleTypes = Set("bundle", "jar")
+  def toBundle(m: ModuleID, a: Artifact): Bundle = {
+    val t = Some(a.`type`).filterNot(bundleTypes.contains)
     Bundle(MavenUrl(m.organization, m.name, m.revision, t, a.classifier).toString)
   }
+  
+  def toBundleID(url: MavenUrl): ModuleID =
+      ModuleID(url.groupId, url.artifactId, url.version,
+        explicitArtifacts = Seq(Artifact(url.artifactId,url.`type` getOrElse "jar", "jar", url.classifer, Nil, None, Map.empty)))
+
+  def toLibraryDependencies(features: Set[Feature]): Seq[ModuleID] =
+    features.flatMap(_.deps).collect {
+      case b @ Bundle(MavenUrl(url)) => toBundleID(url) % "provided"
+    }.toSeq
 
   def selectProjectBundles(ur: UpdateReport, features: Set[Feature]): Set[Bundle] = {
     val mavenUrls = features
@@ -119,6 +127,42 @@ private[packaging] object Resolution {
       val unresolved = selectedRefs.flatMap(selectFeatureDeps(_, fs)) -- resolvedRefs
       resolveFeatures(unresolved, fs, resolved2)
     }
+  }
+
+  def downloadFeaturesRepository(
+    logger: Logger,
+    downloadArtifact: MavenUrl => Option[File],
+    m: ModuleID): Either[String, Seq[FeatureRepository]] = {
+    val as = m.explicitArtifacts.filter(model.FeaturesArtifactData.canBeFeaturesRepository)
+    val fas = for {
+      a <- as
+      url = toMavenUrl(m,a)
+      f = downloadArtifact(url)
+    } yield FeaturesArtifact(m, a, f)
+    val notDownloaded = fas.filterNot(_.downloaded)
+    if (notDownloaded.nonEmpty) return Left(s"Failed to resolve all the features repositories for the module: $m, missing artifact: ${notDownloaded.map(_.artifact.name)}")
+    Right(fas.flatMap { fa =>
+      val r = fa.toRepository
+      if (r.isEmpty) logger.warn(s"Ignored possible features repository, content not known: Artifact ${fa.artifact}, Module $m")
+      r
+    })
+  }
+
+  def mustResolveFeatures(selected: Either[Set[FeatureRef], Set[Feature]]): Set[Feature] = {
+    selected match {
+      case Left(unresolved) => sys.error(s"The following features could not be resolved: $unresolved")
+      case Right(resolved) =>
+        val duplicates = resolved.toSeq
+          .map(_.name)
+          .groupBy(identity)
+          .mapValues(_.size)
+          .filter(_._2 > 1)
+          .keys
+        if (duplicates.nonEmpty)
+          sys.error(s"Could not select a unique feature for the following: $duplicates")
+    }
+    val Right(resolved) = selected
+    resolved
   }
 
 }

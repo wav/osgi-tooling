@@ -1,9 +1,9 @@
 package wav.devtools.sbt.karaf.packaging
 
-import org.osgi.framework.Version
 import sbt.Keys._
 import sbt._
-import wav.devtools.sbt.karaf.packaging.model._, FeaturesXml._
+import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
+import wav.devtools.sbt.karaf.packaging.model._
 
 object KarafPackagingDefaults {
 
@@ -44,12 +44,6 @@ object KarafPackagingDefaults {
     Resolution.resolveRequiredFeatures(constraints, repos)
   }
 
-  private def toRef(t: (String, String)): FeatureRef =
-    featureRef(t._1, {
-      require(t._2 != null && t._2.trim.length > 0, s"The referenced feature ${t._1} does not have a valid version identifier, use `*` to specify any version.")
-      if (t._2 == "*") Version.emptyVersion.toString() else t._2
-    })
-
   lazy val featuresProjectBundleTask = Def.task {
     val (_, f) = (packagedArtifact in(Compile, packageBin)).value
     Bundle(f.toURI.toString)
@@ -58,19 +52,7 @@ object KarafPackagingDefaults {
   lazy val featuresProjectFeatureTask = Def.task {
     val features = featuresRequired.value.map(toRef)
     val selected = featuresSelected.value
-    selected match {
-      case Left(unresolved) => sys.error(s"The following features could not be resolved: $unresolved")
-      case Right(resolved) =>
-        val duplicates = resolved.toSeq
-          .map(_.name)
-          .groupBy(identity)
-          .mapValues(_.size)
-          .filter(_._2 > 1)
-          .keys
-        if (duplicates.nonEmpty)
-          sys.error(s"Could not select a unique feature for the following: $duplicates")
-    }
-    val Right(resolved) = selected
+    val resolved = Resolution.mustResolveFeatures(selected)
     val bundles = Resolution.selectProjectBundles(update.value, resolved) + featuresProjectBundle.value
     feature(name.value, version.value, bundles ++ features)
   }
@@ -100,16 +82,19 @@ object KarafPackagingDefaults {
       .getOrElse(pas)
   }
 
-  lazy val featuresSettings: Seq[Setting[_]] = Seq(
-    featuresXml := featuresXmlTask.value,
-    featuresFile := Some(featuresFileTask.value),
-    featuresRequired := Map.empty,
-    featuresRepositories := featuresRepositoriesTask.value,
-    allFeaturesRepositories := allFeaturesRepositoriesTask.value,
-    featuresSelected := featuresSelectedTask.value,
-    featuresProjectBundle := featuresProjectBundleTask.value,
-    featuresProjectFeature := featuresProjectFeatureTask.value,
-    generateDependsFile := generateDependsFileTask.value,
-    packagedArtifacts <<= featuresPackagedArtifactsTask)
+  lazy val featuresSettings: Seq[Setting[_]] =
+      Internal.settings ++
+      Seq(
+        featuresXml := featuresXmlTask.value,
+        featuresFile := Some(featuresFileTask.value),
+        featuresRequired := Map.empty,
+        featuresRepositories := featuresRepositoriesTask.value,
+        allFeaturesRepositories := allFeaturesRepositoriesTask.value,
+        featuresSelected := featuresSelectedTask.value,
+        featuresProjectBundle := featuresProjectBundleTask.value,
+        featuresProjectFeature := featuresProjectFeatureTask.value,
+        generateDependsFile := generateDependsFileTask.value,
+        packagedArtifacts <<= featuresPackagedArtifactsTask,
+        featuresAddDependencies := false)
 
 }
