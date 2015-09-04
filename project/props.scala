@@ -1,35 +1,6 @@
 package wav.devtools.sbt.karaf
 
 import sbt._
-import Keys._
-
-object Properties {
-
-  val org     = "wav.devtools"
-  val version = "0.1-SNAPSHOT"
-
-  val compilerOptions = Seq(
-    scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-language:implicitConversions"),
-    javacOptions in ThisBuild ++= Seq(
-      "-source", "1.8",
-      "-target", "1.8",
-      "-encoding", "UTF8",
-      "-Xlint:deprecation",
-      "-Xlint:unchecked"))
-
-  val ivyLocal = Resolver.file("local", file(Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns)
-
-  val pluginSettings = compilerOptions ++ Seq(
-    libraryDependencies += Dependencies.`slf4j-simple`,
-    externalResolvers := Seq(ivyLocal),
-    addSbtPlugin(org % "sbt-karaf" % version))
-
-  val packagingPluginSettings = compilerOptions ++ Seq(
-    libraryDependencies += Dependencies.`slf4j-simple`,
-    externalResolvers := Seq(ivyLocal),
-    addSbtPlugin(org % "sbt-karaf-packaging" % version))
-
-}
 
 object Dependencies {
 

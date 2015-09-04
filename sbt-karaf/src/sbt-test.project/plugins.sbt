@@ -1,6 +1,8 @@
-import wav.devtools.sbt.karaf.Properties
+val ivyLocal = Resolver.file("local", file( Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns)
 
-Properties.pluginSettings
+externalResolvers := Seq(ivyLocal)
+
+addSbtPlugin("wav.devtools" % "sbt-karaf" % sys.props("project.version"))
 
 lazy val plugins = (project in file("."))
   .dependsOn(sbtOsgi)
