@@ -39,6 +39,7 @@ object OsgiToolingBuild extends Build {
     .settings(commonPluginSettings: _*)
     .settings(
       libraryDependencies ++= Karaf.common :+ commonsLang,
+      unmanagedSources in Compile += (baseDirectory in ThisBuild).value / "project" / "props.scala",
       unmanagedSourceDirectories in Compile ++= Seq(
         (sourceDirectory in Compile in `sbt-karaf-packaging`).value,
         (sourceDirectory in Compile in `karaf-mbean-wrapper`).value))
