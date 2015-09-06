@@ -84,6 +84,22 @@ private[packaging] object FeaturesXmlFormats {
     }
   }
 
+  object configFileFormat extends XmlFormat[ConfigFile] {
+    def write(cf: ConfigFile) = {
+      Some(setAttrs(<configfile>{cf.value}</configfile>, Map(
+        "finalname" -> Some(cf.finalname),
+        "overrideValue" -> Some(cf.overrideValue.toString)
+      )))
+    }
+    val _read: PartialFunction[Elem, ConfigFile] = {
+      case e: Elem if e.label == "configfile" =>
+        ConfigFile(
+          get(e, "finalname", identity, null),
+          e.text,
+          get(e, "overrideValue", _.toBoolean, true))
+    }
+  }
+
   object featureFormat extends XmlFormat[Feature] {
 
     def write(f: Feature) = {

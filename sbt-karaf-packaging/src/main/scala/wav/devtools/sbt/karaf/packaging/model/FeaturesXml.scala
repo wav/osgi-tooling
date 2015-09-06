@@ -64,6 +64,12 @@ object FeaturesXml {
     append: Boolean = true
     ) extends FeatureOption with ConditionalOption
 
+  case class ConfigFile(
+    finalname: String,
+    value: String,
+    overrideValue: Boolean = true
+    ) extends FeatureOption with ConditionalOption
+
   case class Conditional(
     condition: String,
     deps: Set[ConditionalOption]
