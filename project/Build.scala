@@ -39,7 +39,6 @@ object OsgiToolingBuild extends Build {
     .settings(commonPluginSettings: _*)
     .settings(
       libraryDependencies ++= Karaf.common :+ commonsLang,
-      unmanagedSources in Compile += (baseDirectory in ThisBuild).value / "project" / "props.scala",
       unmanagedSourceDirectories in Compile ++= Seq(
         (sourceDirectory in Compile in `sbt-karaf-packaging`).value,
         (sourceDirectory in Compile in `karaf-mbean-wrapper`).value))
@@ -48,7 +47,6 @@ object OsgiToolingBuild extends Build {
     organization in ThisBuild := "wav.devtools",
     version := "0.1.0.SNAPSHOT",
     externalResolvers ++= Seq(
-      Resolver.file("local", file( Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns),
       Resolver.sbtPluginRepo("releases"),
       Resolver.typesafeIvyRepo("releases")),
     updateOptions := updateOptions.value.withCachedResolution(true),
@@ -74,6 +72,7 @@ object OsgiToolingBuild extends Build {
     scriptedSettings ++
     Seq(
       sbtPlugin := true,
+      unmanagedSources in Compile += (baseDirectory in ThisBuild).value / "project" / "props.scala", // for scripted tests and sbt-karaf
       scriptedLaunchOpts += "-Dproject.version=" + version.value,
       fork in scripted := true) // this may be required for log output
 

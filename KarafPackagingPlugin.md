@@ -6,6 +6,8 @@ View the available settings in:
   >[Keys.scala](sbt-karaf-packaging/src/main/scala/wav/devtools/sbt/karaf/packaging/Keys.scala)
   >[Defaults.scala](sbt-karaf-packaging/src/main/scala/wav/devtools/sbt/karaf/packaging/Defaults.scala)
 
+See the examples, [here](sbt-karaf-packaging/src/sbt-test).
+
 #### Quick start
 
 build.sbt

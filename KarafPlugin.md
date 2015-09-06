@@ -1,14 +1,12 @@
 ## sbt-karaf
 
-Extends the [Karaf Packaging Plugin](KarafPackagingPlugin.md) with the additional functionality:
-
- - `paxSettings` is for running a pax test with the pax version defined in this plugin. \[SLOW]
- - `karafSettings` is for refreshing bundles and features by managing a karaf container sorta like `sbt-revolver`. \[FAST]
-     + An alternative to dumping bundles in the `/deploy` folder.
+Extends the [Karaf Packaging Plugin](KarafPackagingPlugin.md) with settings for refreshing bundles and features by managing a karaf container. It provides quick feedback during development. It's alternative to using the karaf `/deploy` folder.
 
 View the available settings in:
   >[Keys.scala](sbt-karaf/src/main/scala/wav/devtools/sbt/karaf/Keys.scala)
   >[Defaults.scala](sbt-karaf/src/main/scala/wav/devtools/sbt/karaf/Defaults.scala)
+
+See the examples, [here](sbt-karaf/src/sbt-test).
 
 #### Quick start
 
@@ -40,3 +38,7 @@ Problems with feature/bundle deployments that aren't visible in SBT can be viewe
 ```bash
 karaf> log:tail
 ```
+
+### Other settings
+
+> `paxSettings` is for running a pax test with the pax version defined in this plugin. Treat it as informational, it's slow.
