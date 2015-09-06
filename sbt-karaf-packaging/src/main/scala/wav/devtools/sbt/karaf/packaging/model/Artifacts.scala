@@ -51,14 +51,14 @@ object FeaturesArtifactData {
 
   private def isValidFeaturesXml(file: File): Boolean =
     if (!file.exists()) false
-    else Try(Util.validateXml(file.getCanonicalPath, getClass.getResourceAsStream("/" + FeaturesXml.featuresXsd))) match {
+    else Try(Util.validateXml(file.getCanonicalPath, getClass.getResourceAsStream("/" + FeaturesXmlFormats.featuresXsd))) match {
       case Failure(ex) => println(ex); false
       case Success(_) => true
     }
 
   def readFeaturesXml(file: File): Option[FeaturesXml] =
     if (!isValidFeaturesXml(file)) None
-    else FeaturesXml.readFeaturesXml(XML.loadFile(file))
+    else FeaturesXmlFormats.readFeaturesXml(XML.loadFile(file))
 
 }
 

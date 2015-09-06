@@ -1,8 +1,10 @@
 package wav.devtools.sbt.karaf.packaging.model
 
+import java.io.File
+
 import org.scalatest.Spec
-import wav.devtools.sbt.karaf.packaging.Resolution
-import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
+import wav.devtools.sbt.karaf.packaging.{Util => ThisUtil, Resolution}
+import wav.devtools.sbt.karaf.packaging.model._, FeaturesXml._
 
 class FeaturesXmlSuite extends Spec {
 
@@ -35,24 +37,30 @@ class FeaturesXmlSuite extends Spec {
       }
     }
 
-  val jolokia = featureRef("jolokia","1.3.0")
+  val jolokia13 = Dependency("jolokia","1.3.0",false,false)
 
   def `should read valid feature files`(): Unit = {
     val Some(fr) = getRepo(standardID)
     val paxRepo = Repository("mvn:org.ops4j.pax.web/pax-web-features/4.1.4/xml/features")
     assert(fr.featuresXml.elems.contains(paxRepo))
-    val jolokia = feature("jolokia","1.3.0",Set(Bundle("mvn:org.jolokia/jolokia-osgi/1.3.0"), FeatureRef("http",None)))
-    assert(fr.featuresXml.elems.contains(jolokia))
+    val jolokia = feature("jolokia","1.3.0",Set(Bundle("mvn:org.jolokia/jolokia-osgi/1.3.0"), Dependency("http",None)))
+    val Some(selection) = fr.featuresXml.elems.collectFirst {
+      case f @ Feature(name, _, _, Some(_)) if name == "jolokia" => f
+    }
+    assert(jolokia.name == selection.name)
+    assert(jolokia.version == selection.version)
+    assert(jolokia.deps.contains(Bundle("mvn:org.jolokia/jolokia-osgi/1.3.0")))
+    assert(jolokia.deps.contains(Dependency("http",None)))
   }
 
   def `should identify feature that is defined but not referenced`(): Unit = {
     val Some(fr) = getRepo(standardID)
-    fr.features.exists(Resolution.satisfies(jolokia, _))
+    fr.features.exists(Resolution.satisfies(jolokia13, _))
   }
 
   def `should identify a feature dependency that is not defined but referenced`(): Unit = {
     val Some(fr) = getRepo(standardID)
-    fr.features.exists(Resolution.satisfies(FeatureRef("pax-http", None), _))
+    fr.features.exists(Resolution.satisfies(Dependency("pax-http"), _))
   }
 
   def `should identify a bundle dependency`(): Unit = {
@@ -69,21 +77,36 @@ class FeaturesXmlSuite extends Spec {
   }
 
   def `features versions and constraints are comparable`(): Unit = {
-    assert(jolokia == featureRef("jolokia","1.3.0"))
-    assert(Resolution.satisfies(featureRef("jolokia","[1.3,1.4)"), feature("jolokia", "1.3.0")))
-    assert(!Resolution.satisfies(featureRef("jolokia","[1.3,1.4)"), feature("jolokia", "1.2.0")))
-    assert(!Resolution.satisfies(featureRef("jolokia","[1.3,1.4)"), feature("jolokia", "1.4.0")))
+    val jolokia13vr = Dependency("jolokia","[1.3,1.4)", false, false)
+    assert(jolokia13 == Dependency("jolokia","1.3.0",false,false))
+    assert(Resolution.satisfies(jolokia13vr, feature("jolokia", "1.3.0")))
+    assert(!Resolution.satisfies(jolokia13vr, feature("jolokia", "1.2.0")))
+    assert(!Resolution.satisfies(jolokia13vr, feature("jolokia", "1.4.0")))
   }
 
   def `finds all transitive features and bundles`(): Unit = {
     val complete = repoIDs.keys.flatMap(getRepo).toSet
-    val jolokiaDeps = Resolution.selectFeatureDeps(jolokia, complete.flatMap(_.features))
-    assert(Set(FeatureRef("http")) == jolokiaDeps)
-    val result = Resolution.resolveRequiredFeatures(Set(jolokia), complete)
+    val jolokiaDeps = Resolution.selectFeatureDeps(jolokia13, complete.flatMap(_.features))
+    assert(Set(Dependency("http",None,false,false)) == jolokiaDeps)
+    val result = Resolution.resolveRequiredFeatures(Set(jolokia13), complete)
     assert(result.isRight)
     val Right(rs) = result
     assert(Set("jolokia", "http", "pax-http", "pax-http-jetty", "pax-jetty") == rs.map(_.name))
-    rs.flatMap(_.bundles).collect { case Bundle(MavenUrl(url)) => url }.foreach(println)
+    rs.flatMap(_.deps).collect { case Bundle(MavenUrl(url), _, _, _) => url }.foreach(println)
+  }
+
+  def `can write a valid features descriptor`(): Unit = {
+    val repository = Repository("mvn:org.ops4j.pax.web/pax-web-features/4.1.4/xml/features")
+    val bundle = Bundle("mvn:org.scala-lang/scala-library/2.11.7")
+    val config = Config("my.project.cfg", "property=value")
+    val configFile = ConfigFile("my.project.bootstrap.cfg", "https://internal.ip/my.project/bootstrap.cfg")
+    val feature = Feature(name = "test-feature", deps = Set(bundle, config, configFile))
+    val descriptor = FeaturesXml("test-project", Seq(repository, feature))
+    val xml = FeaturesXmlFormats.makeFeaturesXml(descriptor)
+    println(xml)
+    IO.withTemporaryFile("descriptor", new File("./target/test-data").getName) { f =>
+      ThisUtil.write(f, FeaturesXmlFormats.featuresXsd, xml)
+    }
   }
 
 }

@@ -27,13 +27,13 @@ lazy val checkBundleAndFeatureIncluded = taskKey[Unit]("Tests if the jolokia fea
 checkBundleAndFeatureIncluded := {
   val deps = featuresProjectFeature.value.deps
   import wav.devtools.sbt.karaf.packaging.model, model.MavenUrl, model.FeaturesXml._
-  val jolokiaResult = deps.collectFirst { case ref @ FeatureRef("jolokia", _) => ref }
+  val jolokiaResult = deps.collectFirst { case ref @ Dependency("jolokia", _, _, _) => ref }
   if (jolokiaResult.isEmpty)
     sys.error("The jolokia feature was not added to the project feature")
   val logger = streams.value.log
   logger.info(deps.toString)
   val slf4jResult = deps
-    .collect { case Bundle(MavenUrl(url)) => url }
+    .collect { case Bundle(MavenUrl(url), _, _, _) => url }
     .collectFirst { case MavenUrl("org.slf4j", "osgi-over-slf4j", "1.7.10", None, None) => true }
   if (slf4jResult.isEmpty) 
     sys.error("The slf4j bundle was not added to the project feature")
