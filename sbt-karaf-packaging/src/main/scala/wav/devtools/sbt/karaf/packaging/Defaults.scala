@@ -16,8 +16,8 @@ object KarafPackagingDefaults {
   lazy val featuresFileTask = Def.task {
     Util.write(
       crossTarget.value / "features.xml",
-      featuresXsd,
-      makeFeaturesXml(featuresXml.value))
+      FeaturesXmlFormats.featuresXsd,
+      FeaturesXmlFormats.makeFeaturesXml(featuresXml.value))
   }
 
   private lazy val allFeaturesRepositories   = taskKey[Set[FeatureRepository]]("All resolved features repositories")
@@ -28,7 +28,7 @@ object KarafPackagingDefaults {
   }
 
   lazy val featuresRepositoriesTask = Def.task {
-    val constraints = featuresRequired.value.map(toRef).toSet
+    val constraints = featuresRequired.value.map(toDep).toSet
     val repos = allFeaturesRepositories.value
     for {
       fr <- repos
@@ -39,7 +39,7 @@ object KarafPackagingDefaults {
   }
 
   lazy val featuresSelectedTask = Def.task {
-    val constraints = featuresRequired.value.map(toRef).toSet
+    val constraints = featuresRequired.value.map(toDep).toSet
     val repos = allFeaturesRepositories.value
     Resolution.resolveRequiredFeatures(constraints, repos)
   }
@@ -50,7 +50,7 @@ object KarafPackagingDefaults {
   }
 
   lazy val featuresProjectFeatureTask = Def.task {
-    val features = featuresRequired.value.map(toRef)
+    val features = featuresRequired.value.map(toDep)
     val selected = featuresSelected.value
     val resolved = Resolution.mustResolveFeatures(selected)
     val bundles = Resolution.selectProjectBundles(update.value, resolved) + featuresProjectBundle.value

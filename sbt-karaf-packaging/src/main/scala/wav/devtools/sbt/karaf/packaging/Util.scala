@@ -47,9 +47,10 @@ private[packaging] object Util {
     target
   }
 
-  def setAttrs(e: Elem, attrs: Map[String, String]): Elem =
-    e.copy(attributes = attrs.map(t =>
-      Attribute(None, t._1, Text(t._2), Null)).fold(Null)((soFar, attr) => soFar append attr))
+  def setAttrs(e: Elem, attrs: Map[String, Option[String]]): Elem =
+    e.copy(attributes = attrs.collect {
+      case ((name, Some(value))) => Attribute(None, name, Text(value.toString), Null)
+    }.fold(Null)((soFar, attr) => soFar append attr))
 
   def getJarManifest(path: String): JManifest = {
     val is = new FileInputStream(path)

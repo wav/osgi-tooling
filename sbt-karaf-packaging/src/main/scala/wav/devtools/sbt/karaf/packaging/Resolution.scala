@@ -42,7 +42,7 @@ private[packaging] object Resolution {
     }
   }
 
-  def resolveRequiredFeatures(required: Set[FeatureRef], repositories: Set[FeatureRepository]): Either[Set[FeatureRef], Set[Feature]] = {
+  def resolveRequiredFeatures(required: Set[Dependency], repositories: Set[FeatureRepository]): Either[Set[Dependency], Set[Feature]] = {
     val allFeatures = for {
       fr <- repositories
       f <- fr.featuresXml.elems.collect { case f: Feature => f }
@@ -65,13 +65,13 @@ private[packaging] object Resolution {
 
   def toLibraryDependencies(features: Set[Feature]): Seq[ModuleID] =
     features.flatMap(_.deps).collect {
-      case b @ Bundle(MavenUrl(url)) => toBundleID(url) % "provided"
+      case b @ Bundle(MavenUrl(url), _, _, _) => toBundleID(url) % "provided"
     }.toSeq
 
   def selectProjectBundles(ur: UpdateReport, features: Set[Feature]): Set[Bundle] = {
     val mavenUrls = features
-      .flatMap(_.bundles)
-      .collect { case Bundle(MavenUrl(url)) => url }
+      .flatMap(_.deps)
+      .collect { case Bundle(MavenUrl(url), _, _, _) => url }
     val cr = ur.filter(bundleArtifactFilter).configuration("runtime").get
     val inFeatures =
       for {
@@ -89,17 +89,17 @@ private[packaging] object Resolution {
       } yield toBundle(m,a)).toSet
   }
 
-  def satisfies(constraint: FeatureRef, feature: Feature): Boolean =
+  def satisfies(constraint: Dependency, feature: Feature): Boolean =
     constraint.name == feature.name && (
       constraint.version.isEmpty || {
         var vr = constraint.version.get
         !vr.isEmpty() && (feature.version == Version.emptyVersion || vr.includes(feature.version))
       })
 
-  def selectFeatureDeps(ref: FeatureRef, fs: Set[Feature]): Set[FeatureRef] =
-    fs.filter(satisfies(ref, _)).flatMap(_.deps).collect { case dep: FeatureRef => dep }
+  def selectFeatureDeps(dep: Dependency, fs: Set[Feature]): Set[Dependency] =
+    fs.filter(satisfies(dep, _)).flatMap(_.deps).collect { case dep: Dependency => dep }
 
-  def selectFeatures(requested: Set[FeatureRef], fs: Set[Feature]): Either[Set[FeatureRef], Set[Feature]] = {
+  def selectFeatures(requested: Set[Dependency], fs: Set[Feature]): Either[Set[Dependency], Set[Feature]] = {
     val unsatisfied = for {
       constraint <- requested
       if (fs.forall(f => !satisfies(constraint, f)))
@@ -115,14 +115,14 @@ private[packaging] object Resolution {
   }
 
   @tailrec
-  def resolveFeatures(requested: Set[FeatureRef], fs: Set[Feature], resolved: Set[Feature] = Set.empty): Either[Set[FeatureRef], Set[Feature]] = {
+  def resolveFeatures(requested: Set[Dependency], fs: Set[Feature], resolved: Set[Feature] = Set.empty): Either[Set[Dependency], Set[Feature]] = {
     if (requested.isEmpty) return Right(resolved)
     val result = selectFeatures(requested, fs)
     if (result.isLeft) result
     else {
       val Right(selection) = result
-      val selectedRefs = selection.map(_.toRef)
-      val resolvedRefs = resolved.map(_.toRef)
+      val selectedRefs = selection.map(_.toDep)
+      val resolvedRefs = resolved.map(_.toDep)
       val resolved2 = selection ++ resolved
       val unresolved = selectedRefs.flatMap(selectFeatureDeps(_, fs)) -- resolvedRefs
       resolveFeatures(unresolved, fs, resolved2)
@@ -148,7 +148,7 @@ private[packaging] object Resolution {
     })
   }
 
-  def mustResolveFeatures(selected: Either[Set[FeatureRef], Set[Feature]]): Set[Feature] = {
+  def mustResolveFeatures(selected: Either[Set[Dependency], Set[Feature]]): Set[Feature] = {
     selected match {
       case Left(unresolved) => sys.error(s"The following features could not be resolved: $unresolved")
       case Right(resolved) =>

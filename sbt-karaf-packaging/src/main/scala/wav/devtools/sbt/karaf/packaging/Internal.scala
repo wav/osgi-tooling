@@ -12,7 +12,7 @@ private [packaging] object Internal {
       val extracted = Project.extract(state)
       val shouldAdd = extracted.get(featuresAddDependencies)
       if (shouldAdd) {
-        val constraints = extracted.get(featuresRequired).map(toRef).toSet
+        val constraints = extracted.get(featuresRequired).map(toDep).toSet
         val (_, repos) = extracted.runTask(downloadAllFeatureRepositories, state)
         val result = Resolution.resolveRequiredFeatures(constraints, repos)
         val resolved = Resolution.mustResolveFeatures(result)

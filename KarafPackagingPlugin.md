@@ -68,7 +68,10 @@ lazy val root = project.in(file("."))
     .settings(
       featuresProjectFeature := {
         val pf = featuresProjectFeature.value
-        pf.copy(deps = pf.deps :+ Configuration("property=value"))
+        pf.copy(deps = pf.deps :+ Config("my.project.cfg", s"""
+          | property1=value1
+          | property2=value2
+          |""".stripMargin))
       },
       featuresXml := {
         val xml = featuresXml.value
@@ -90,7 +93,6 @@ lazy val root = project.in(file("."))
 #### TODO
 
 - Add bundles from non `mvn:` style urls to project feature
-- Read and add configuration elements in a features file
 - Report on bundles that cannot be added to the project feature with a suggestion
 - Generate a different feature file based on configurations so that bundle URL's aren't pointing to the local file system.
         Eg. do `<bundle>file://...</bundle>` and `<bundle>mvn:...</bundle>`

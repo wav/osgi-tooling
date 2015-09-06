@@ -1,113 +1,89 @@
 package wav.devtools.sbt.karaf.packaging.model
 
 import org.osgi.framework.{Version, VersionRange}
-import wav.devtools.sbt.karaf.packaging.Util
 
-import scala.collection.mutable.{Map => MMap}
-import scala.xml.Elem
-
-// TODO: collect feature depencencies that are not simple elements. e.g. have a configuration.
 object FeaturesXml {
 
-  sealed trait FeaturesElem {
-    private[FeaturesXml] def xml: Elem
-    private[FeaturesXml] val isEmpty = false
+  sealed trait FeaturesOption
+
+  case class Repository(url: String)
+    extends FeaturesOption
+
+  sealed trait FeatureOption
+
+  implicit def string2someVersion(version: String): Option[Version] =
+    Some(Version.parseVersion(version))
+
+  case class Feature(
+    name: String,
+    version: Version = Version.emptyVersion,
+    deps: Set[FeatureOption] = Set.empty,
+    description: Option[String] = None
+  ) extends FeaturesOption {
+    @deprecated("use toDep", "experimental")
+    def toRef: Dependency = toDep
+    def toDep: Dependency =
+      Dependency(name, if (version == Version.emptyVersion) None else Some(VersionRange.valueOf(version.toString())))
   }
 
-  case class Repository(url: String) extends FeaturesElem {
-    private[model] lazy val xml =
-      <repository>{url}</repository>
+  sealed trait ConditionalOption
+
+  case class Bundle(
+    url: String,
+    dependency: Boolean = false,
+    start: Boolean = false,
+    `start-level`: Option[Int] = None
+    ) extends FeatureOption with ConditionalOption
+
+  def WrappedBundle(
+    url: String,
+    instructions: Map[String, String] = Map.empty,
+    instructionsUrl: Option[String] = None,
+    dependency: Boolean = false,
+    start: Boolean = false,
+    `start-level`: Option[Int] = None): Bundle = {
+    require(instructions.nonEmpty || instructionsUrl.nonEmpty, "A wrapped bundle must specify instructions")
+    val instUrl = if (instructionsUrl.nonEmpty) ("," + instructionsUrl.get) else ""
+    val inst = if (instructions.nonEmpty) ("$" + instructions.map(e => e._1 + "=" + e._2).mkString("&")) else ""
+    Bundle("wrap:" + url + instUrl + inst, dependency, start, `start-level`)
   }
 
-  sealed trait FeatureDependency {
-    private[FeaturesXml] def xml: Elem
-    private[FeaturesXml] val isEmpty = false
-  }
+  implicit def string2someVersionRange(version: String): Option[VersionRange] =
+    Some(VersionRange.valueOf(version))
 
-  abstract class ABundle extends FeatureDependency {
-    val url: String
-    private[model] lazy val xml =
-      <bundle>{url}</bundle>
-  }
+  case class Dependency(
+    name: String,
+    version: Option[VersionRange] = None,
+    prerequisite: Boolean = true,
+    dependency: Boolean = true
+    ) extends FeatureOption
 
-  case class Bundle(url: String) extends ABundle {
-    require(!url.isEmpty, "missing bundle url")
-  }
+  case class Config(
+    name: String,
+    value: String,
+    append: Boolean = true
+    ) extends FeatureOption with ConditionalOption
 
-  case class WrappedBundle(baseUrl: String, manifest: Map[String, String]) extends ABundle {
-    val url: String =
-      "wrap:" + url +
-        "$" + manifest.map(e => e._1 + "=" + e._2).mkString("&")
-  }
+  case class Conditional(
+    condition: String,
+    deps: Set[ConditionalOption]
+    ) extends FeatureOption
 
-  case class Feature(name: String, version: Version = Version.emptyVersion, deps: Set[FeatureDependency] = Set.empty) extends FeaturesElem {
-    private[model] lazy val xml =
-      Util.setAttrs(<feature>
-        {deps.filterNot(_.isEmpty).map(_.xml)}
-      </feature>, Map("name" -> name, "version" -> version.toString()))
-    private[FeaturesXml] override val isEmpty = name == null
-    lazy val toRef = FeatureRef(name, if (version == Version.emptyVersion) None else Some(VersionRange.valueOf(version.toString())))
-    lazy val bundles: Set[ABundle] = deps.collect { case b: ABundle => b }
-    lazy val featureRefs: Set[FeatureRef] = deps.collect { case ref: FeatureRef => ref }
-  }
+  @deprecated("use Dependency", "experimental")
+  def FeatureRef(name: String, version: Option[VersionRange] = None): Dependency =
+    Dependency(name, version)
 
-  def feature(name: String, version: String, deps: Set[FeatureDependency] = Set.empty): Feature =
-      Feature(name, Version.parseVersion(version), deps)
+  @deprecated("use Dependency", "experimental")
+  def featureRef(name: String, version: String): Dependency =
+    Dependency(name, version)
+
+  def feature(name: String, version: String, deps: Set[FeatureOption] = Set.empty): Feature =
+    Feature(name, Version.parseVersion(version), deps)
 
   val emptyFeature = Feature(null)
 
-  case class FeatureRef(name: String, version: Option[VersionRange] = None) extends FeatureDependency {
-    private lazy val attrs = {
-      val m = MMap[String, String]()
-      version.foreach(v => m.put("version", v.toString()))
-      m.toMap
-    }
-    private[model] lazy val xml =
-      Util.setAttrs(<feature>{name}</feature>, attrs)
-    private[FeaturesXml] override val isEmpty = name == null
-    override def toString(): String =
-      if (version.isEmpty) name else s"$name:${version}"
-  }
-
-  def featureRef(name: String, version: String): FeatureRef =
-      FeatureRef(name, Some(VersionRange.valueOf(version)))
-
-  val emptyFeatureRef = FeatureRef(null)
-
-  private[packaging] val featuresSchemas =
-    Seq("1.2.0", "1.3.0")
-    .map(v => v -> (s"http://karaf.apache.org/xmlns/features/v$v" -> s"org/apache/karaf/features/karaf-features-$v.xsd"))
-    .toMap
-
-  private[packaging] val (featuresXsdUrl, featuresXsd) = featuresSchemas("1.3.0")
-
-  private[packaging] def makeFeaturesXml[N <: scala.xml.Node](featuresXml: FeaturesXml): Elem =
-    <features xmlns={featuresXsdUrl} name={featuresXml.name}>{
-      featuresXml.elems.filterNot(_.isEmpty).map(_.xml)
-    }</features>
-
-  // TODO: read dependency attribute.
-  private[packaging] def readFeaturesXml[N <: scala.xml.Node](source: N): Option[FeaturesXml] = {
-    val base = source \\ "features"
-    val repositories = base \ "repository" collect { case e: Elem => Repository(e.text) }
-    val features = base \ "feature" map { feature =>
-      val bundles = (feature \ "bundle" collect {
-        case e: Elem if e.text.startsWith("wrap:") => WrappedBundle(e.text, Map.empty) // TODO
-        case e: Elem => Bundle(e.text)
-      }).toSet
-      val featureRefs = (feature \ "feature" collect {
-        case e: Elem if e.child.length == 1 => FeatureRef(e.text, e.attributes.asAttrMap.get("version").map(VersionRange.valueOf))
-      }).toSet
-      val m = feature.attributes.asAttrMap
-      Feature(m("name"), m.get("version").map(Version.parseVersion).getOrElse(Version.emptyVersion), bundles ++ featureRefs)
-    }
-    val Some(n) = base collectFirst {
-      case e: Elem => e.attributes.asAttrMap("name")
-    }
-    val fxml = new FeaturesXml(n, repositories ++ features)
-    if (fxml.elems.nonEmpty) Some(fxml) else None
-  }
+  val emptyFeatureRef = Dependency(null)
 
 }
 
-case class FeaturesXml(name: String, elems: Seq[FeaturesXml.FeaturesElem] = Nil)
+case class FeaturesXml(name: String, elems: Seq[FeaturesXml.FeaturesOption] = Nil)
