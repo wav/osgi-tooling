@@ -18,8 +18,6 @@ Clone this repository and run `sbt publish-local`. Afterwards you'll be able to 
 
 plugins.sbt
 ```scala
-externalResolvers := Seq(ivyLocal)
-
 addSbtPlugin("wav.devtools" % "sbt-karaf-packaging" % version)
 ```
 
@@ -27,7 +25,5 @@ addSbtPlugin("wav.devtools" % "sbt-karaf-packaging" % version)
 
 plugins.sbt
 ```scala
-externalResolvers := Seq(ivyLocal)
-
 addSbtPlugin("wav.devtools" % "sbt-karaf" % version)
 ```
