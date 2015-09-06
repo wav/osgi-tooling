@@ -93,7 +93,7 @@ object KarafDefaults {
   lazy val karafDeployFeatureTask = Def.task {
     val ff = featuresFile.value
     require(ff.isDefined, "`featuresFile` must produce a features file")
-    val repo = "file:" + ff.get.getCanonicalPath
+    val repo = ff.get.getAbsoluteFile.toURI.toString
     val services = getKarafServices(karafContainerArgs.value, karafRMIConnection.value)
     val features = handled(services.FeaturesService)
     if (!features.repoRefresh(repo)) sys.error("Couldn't add repository, " + repo)
@@ -103,7 +103,7 @@ object KarafDefaults {
   lazy val karafUndeployFeatureTask = Def.task {
     val ff = featuresFile.value
     require(ff.isDefined, "`featuresFile` must produce a features file")
-    val repo = "file:" + ff.get.getCanonicalPath
+    val repo = ff.get.getAbsoluteFile.toURI.toString
     val services = getKarafServices(karafContainerArgs.value, karafRMIConnection.value)
     val features = handled(services.FeaturesService)
     if (!features.uninstall(name.value, version.value)) sys.error("Couldn't uninstall project feature")
