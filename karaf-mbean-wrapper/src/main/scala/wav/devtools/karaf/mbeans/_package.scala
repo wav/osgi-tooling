@@ -8,8 +8,8 @@ package object mbeans {
 		val services = MBeanServices(connector)
 	}
 
-  val DefaultContainerArgs = ContainerArgs(DefaultServiceUrl.toString, "karaf", "karaf")
-
   val DefaultServiceUrl = ServiceUrl("localhost", 1099, "karaf-root")
+
+  val DefaultContainerArgs = ContainerArgs(DefaultServiceUrl.toString, "karaf", "karaf")
 
 }
