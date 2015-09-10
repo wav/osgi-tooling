@@ -6,38 +6,36 @@ import java.util.HashMap
 import javax.management.remote.{JMXConnector, JMXConnectorFactory, JMXServiceURL}
 import javax.management.{JMX, ObjectInstance, ObjectName}
 import javax.naming.{ServiceUnavailableException, CommunicationException}
-
 import scala.collection.JavaConversions.asScalaSet
 import scala.util.{Failure, Try}
 
 object MBeanConnection {
 
   @throws(classOf[Exception])
-  def apply(args: ContainerArgs, retries: Int = 0, maxRetries: Int = 10): Try[JMXConnector] =
-    Try(args match {
-      case ContainerArgs.Password(serviceUrl, user, password) =>
-        val environment = new HashMap[String, Array[String]]
-        environment.put(JMXConnector.CREDENTIALS, Array[String](user, password))
-        JMXConnectorFactory.connect(new JMXServiceURL(serviceUrl), environment)
-    })
+  def apply(creds: ContainerArgs, retries: Int = 0, maxRetries: Int = 10): Try[JMXConnector] =
+    Try {
+      val environment = new HashMap[String, Array[String]]
+      environment.put(JMXConnector.CREDENTIALS, Array[String](creds.user, creds.pass))
+      JMXConnectorFactory.connect(new JMXServiceURL(creds.serviceUrl), environment)
+    }
     .recoverWith {
       // retry if the server doesn't appear to be ready.
       case nobex: NoSuchObjectException if retries <= maxRetries =>
         Thread.sleep(1000 * retries)
         println("Karaf service not ready, retrying ...")
-        apply(args, retries + 1, maxRetries)
+        apply(creds, retries + 1, maxRetries)
       case ioex: IOException =>
         ioex.getCause() match {
           case suex: ServiceUnavailableException if retries <= maxRetries =>
             Thread.sleep(1000 * retries)
             println("Karaf server not available, retrying ...")
-            apply(args, retries + 1, maxRetries)
+            apply(creds, retries + 1, maxRetries)
           case commex: CommunicationException =>
             commex.getRootCause() match {
               case nobex: NoSuchObjectException if retries <= maxRetries =>
                 Thread.sleep(1000 * retries)
                 println("Karaf service not available, retrying ...")
-                apply(args, retries + 1, maxRetries)
+                apply(creds, retries + 1, maxRetries)
               case _ => Failure(ioex)
             }
           case _ => Failure(ioex)

@@ -36,7 +36,7 @@ object KarafDefaults {
 
   lazy val karafBundleArgsSetting = Def.setting(BundleStartArgs(organization.value + "." + name.value))
 
-  lazy val karafContainerArgsSetting = Def.setting(ContainerArgs.Default)
+  lazy val karafContainerArgsSetting = Def.setting(DefaultContainerArgs)
 
   private val karafRMIConnection = settingKey[AtomicReference[Option[JMXConnector]]]("karaf RMI connection")
 
