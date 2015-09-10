@@ -116,11 +116,8 @@ object KarafDefaults {
    * - A JUnit test framework must be registered with SBT
    */
   lazy val paxSettings: Seq[Setting[_]] = Seq(
-    libraryDependencies ++= {
-      import wav.devtools.sbt.karaf.Dependencies._
-      Seq(paxExam, paxKaraf, paxAether, javaxInject, paxJunit, junit, junitInterface, osgiCore, Karaf.assembly)
-    },
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"), // for junit-interface / paxExam
+    libraryDependencies ++= Dependencies.paxExamKaraf,
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
     fork in Test := true, // IMPORTANT, forking ensures that the container starts with the correct classpath
     outputStrategy in Test := Some(StdoutOutput),
     resourceGenerators in Compile <+= Def.task {
@@ -128,6 +125,11 @@ object KarafDefaults {
       IO.copyFile(generateDependsFile.value,f)
       Seq(f)
     })
+
+  lazy val arquillianSettings: Seq[Setting[_]] = Seq(
+    libraryDependencies ++= Dependencies.arquillianRemoteKaraf,
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
+  )
 
   lazy val karafSettings: Seq[Setting[_]] = Seq(
     karafRMIConnection := new AtomicReference(None),

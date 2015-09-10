@@ -8,25 +8,43 @@ object Dependencies {
   val `slf4j-simple` = "org.slf4j" % "slf4j-simple" % "1.7.10"
   val commonsLang    = "org.apache.commons" % "commons-lang3" % "3.4"
   val osgiCore       = "org.osgi" % "org.osgi.core" % "5.0.0"
+  val osgiEnterprise = "org.osgi" % "org.osgi.enterprise" % "5.0.0"
+  val junit          = "junit" % "junit" % "4.11" % "test"
+  val junitInterface = "com.novocode" % "junit-interface" % "0.11" % "test"
   val scalaTest      = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+  val ariesJmx       = "org.apache.aries.jmx" % "org.apache.aries.jmx" % "1.1.5"
 
   /**
    * Pax exam dependencies: // https://ops4j1.jira.com/wiki/display/PAXEXAM4/Karaf+Container
    */
-  val vPaxExam       = "4.5.0"
-  val paxExam        = "org.ops4j.pax.exam" % "pax-exam" % vPaxExam % "test"
-  val paxKaraf       = "org.ops4j.pax.exam" % "pax-exam-container-karaf" % vPaxExam % "test"
-  val paxAether      = "org.ops4j.pax.url" % "pax-url-aether" % "1.6.0" % "test"
-  val javaxInject    = "javax.inject" % "javax.inject" % "1" % "test"
-  val paxJunit       = "org.ops4j.pax.exam" % "pax-exam-junit4" % vPaxExam % "test"
-  val junit          = "junit" % "junit" % "4.11" % "test"
-  val junitInterface = "com.novocode" % "junit-interface" % "0.11" % "test"
+  val vPaxExam       = "4.6.0"
+  val paxExamKaraf = Seq(
+    osgiCore,
+    junit,
+    junitInterface,
+    Karaf.assembly,
+    "org.ops4j.pax.exam" % "pax-exam" % vPaxExam % "test",
+    "org.ops4j.pax.exam" % "pax-exam-container-karaf" % vPaxExam % "test",
+    "org.ops4j.pax.url" % "pax-url-aether" % "1.6.0" % "test",
+    "javax.inject" % "javax.inject" % "1" % "test",
+    "org.ops4j.pax.exam" % "pax-exam-junit4" % vPaxExam % "test"
+  )
+
+  val arquillianRemoteKaraf = Seq(
+    osgiCore,
+    osgiEnterprise,
+    junitInterface,
+    "org.apache.felix" % "org.apache.felix.framework" % "5.0.1" % "provided",
+    "org.apache.felix" % "org.apache.felix.main" % "5.0.1" % "provided",
+    "org.jboss" % "jboss-vfs" % "3.2.10.Final" % "test",
+    "org.jboss.arquillian.junit" % "arquillian-junit-container" % "1.1.2.Final" % "test",
+    "org.jboss.arquillian.container" % "arquillian-container-karaf-remote" % "2.1.0.CR18" % "test")
 
   object Karaf {
 
     val Version = "4.0.0"
 
-    val assembly = (("org.apache.karaf" % "apache-karaf" % Version)
+    val assembly = (("org.apache.karaf" % "apache-karaf" % "4.0.1")
       .artifacts(Artifact("apache-karaf", `type` = "tar.gz", extension = "tar.gz"))
       .intransitive)
 
