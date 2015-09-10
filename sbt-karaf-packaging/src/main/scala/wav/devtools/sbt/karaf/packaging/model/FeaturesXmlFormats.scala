@@ -62,7 +62,7 @@ private[packaging] object FeaturesXmlFormats {
     val _read: PartialFunction[Elem, Dependency] = {
       case e: Elem if e.label == "feature" =>
         Dependency(e.text,
-          opt(e, "version", VersionRange.valueOf),
+          opt(e, "version", new VersionRange(_)),
           get(e, "prerequisite", _.toBoolean, true),
           get(e, "dependency", _.toBoolean, true))
     }

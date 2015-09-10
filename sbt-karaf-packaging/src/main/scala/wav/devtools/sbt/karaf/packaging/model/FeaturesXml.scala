@@ -23,7 +23,7 @@ object FeaturesXml {
     @deprecated("use toDep", "experimental")
     def toRef: Dependency = toDep
     def toDep: Dependency =
-      Dependency(name, if (version == Version.emptyVersion) None else Some(VersionRange.valueOf(version.toString())))
+      Dependency(name, if (version == Version.emptyVersion) None else Some(new VersionRange(version.toString())))
   }
 
   sealed trait ConditionalOption
@@ -49,7 +49,7 @@ object FeaturesXml {
   }
 
   implicit def string2someVersionRange(version: String): Option[VersionRange] =
-    Some(VersionRange.valueOf(version))
+    Some(new VersionRange(version))
 
   case class Dependency(
     name: String,

@@ -7,7 +7,7 @@ object Dependencies {
   val slf4j          = "org.slf4j" % "slf4j-api" % "1.7.10"
   val `slf4j-simple` = "org.slf4j" % "slf4j-simple" % "1.7.10"
   val commonsLang    = "org.apache.commons" % "commons-lang3" % "3.4"
-  val osgiCore       = "org.osgi" % "org.osgi.core" % "6.0.0"
+  val osgiCore       = "org.osgi" % "org.osgi.core" % "5.0.0"
   val scalaTest      = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
   /**
