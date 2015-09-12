@@ -110,27 +110,6 @@ object KarafDefaults {
     if (!features.repoRemove(repo)) sys.error("Couldn't remove repository, " + repo)
   }
 
-  /**
-   * Inorder to get pax test to run, you only need:
-   * - Pax dependencies for a container as per the pax exam website
-   * - A JUnit test framework must be registered with SBT
-   */
-  lazy val paxSettings: Seq[Setting[_]] = Seq(
-    libraryDependencies ++= Dependencies.paxExamKaraf,
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
-    fork in Test := true, // IMPORTANT, forking ensures that the container starts with the correct classpath
-    outputStrategy in Test := Some(StdoutOutput),
-    resourceGenerators in Compile <+= Def.task {
-      val f = (resourceManaged in Compile).value / packaging.model.DependenciesProperties.jarPath
-      IO.copyFile(generateDependsFile.value,f)
-      Seq(f)
-    })
-
-  lazy val arquillianSettings: Seq[Setting[_]] = Seq(
-    libraryDependencies ++= Dependencies.arquillianRemoteKaraf,
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
-  )
-
   lazy val karafSettings: Seq[Setting[_]] = Seq(
     karafRMIConnection := new AtomicReference(None),
     karafResetServer := karafResetServerTask.value,

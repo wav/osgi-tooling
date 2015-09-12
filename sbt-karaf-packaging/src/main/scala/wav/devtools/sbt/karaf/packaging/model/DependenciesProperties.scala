@@ -1,6 +1,6 @@
 package wav.devtools.sbt.karaf.packaging.model
 
-object DependenciesProperties {
+private [packaging] object DependenciesProperties {
 
   val jarPath = "META-INF/maven/dependencies.properties"
 

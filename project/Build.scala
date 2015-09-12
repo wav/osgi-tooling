@@ -17,6 +17,7 @@ object OsgiToolingBuild extends Build {
       libraryDependencies ++=
         features ++
         Seq(
+          jarchivelib,
           osgiCore,
           scalaTest,
           commonsLang,
@@ -36,11 +37,11 @@ object OsgiToolingBuild extends Build {
       })
 
   lazy val `sbt-karaf` = project
+    .dependsOn(`sbt-karaf-packaging`)
     .settings(commonPluginSettings: _*)
     .settings(
       libraryDependencies ++= Karaf.common :+ commonsLang,
       unmanagedSourceDirectories in Compile ++= Seq(
-        (sourceDirectory in Compile in `sbt-karaf-packaging`).value,
         (sourceDirectory in Compile in `karaf-mbean-wrapper`).value))
 
   val commonSettings = Seq(
@@ -72,7 +73,6 @@ object OsgiToolingBuild extends Build {
     scriptedSettings ++
     Seq(
       sbtPlugin := true,
-      unmanagedSources in Compile += (baseDirectory in ThisBuild).value / "project" / "props.scala", // for scripted tests and sbt-karaf
       scriptedLaunchOpts += "-Dproject.version=" + version.value,
       fork in scripted := true) // this may be required for log output
 

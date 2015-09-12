@@ -16,6 +16,9 @@ import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy
 import org.ops4j.pax.exam.spi.reactors.PerMethod
 import java.io.File
 import org.osgi.framework.{Bundle, BundleContext}
+import org.ops4j.pax.exam.CoreOptions._
+import org.ops4j.pax.exam.karaf.options._, KarafDistributionOption._
+import org.junit.Assert._
 
 @RunWith(classOf[PaxExam])
 @ExamReactorStrategy(Array(classOf[PerMethod]))
@@ -25,46 +28,39 @@ class SampleTest {
 
   @Configuration
   def config(): Array[PaxOption] = {
-    import org.ops4j.pax.exam.CoreOptions._
-    import org.ops4j.pax.exam.karaf.options._, KarafDistributionOption._
-
-   val karafVersion = "4.0.0.M2"
 
     val karafUrl = maven()
       .groupId("org.apache.karaf")
-      .artifactId("apache-karaf")
+      .artifactId("apache-karaf-minimal")
       .versionAsInProject()
-//      .version(karafVersion)
       .`type`("tar.gz")
+
     val karafStandardRepo = maven()
       .groupId("org.apache.karaf.features")
       .artifactId("standard")
       .classifier("features")
-      .version(karafVersion)
+      .versionAsInProject()
       .`type`("xml")
 
-    val osgiBundle = bundle("mvn:org.osgi/org.osgi.core/6.0.0") // .versionAsInProject()
-    val scalaBundle = bundle("mvn:org.scala-lang/scala-library/2.11.6") // .versionAsInProject()
+    val scalaBundle = mavenBundle()
+      .groupId("org.scala-lang")
+      .artifactId("scala-library")
+      .versionAsInProject()
 
     options(
+      // KarafDistributionOption.debugConfiguration("5005", true),
       editConfigurationFilePut("etc/org.ops4j.pax.url.mvn.cfg", "org.ops4j.pax.url.mvn.localRepository", "~/.m2/repository"),
-      editConfigurationFilePut("etc/org.apache.felix.eventadmin.impl.EventAdmin.cfg", "org.apache.felix.eventadmin.IgnoreTimeout", ""),
-      editConfigurationFilePut("etc/org.apache.felix.eventadmin.impl.EventAdmin.cfg", "org.apache.felix.eventadmin.IgnoreTopic", ""),
-//      debugConfiguration("5005", true),
       karafDistributionConfiguration()
         .frameworkUrl(karafUrl)
-        .unpackDirectory(new File("target/exam"))
+        .unpackDirectory(new File("target", "exam"))
         .useDeployFolder(false),
-      logLevel(LogLevelOption.LogLevel.WARN),
-      provision(scalaBundle),
       keepRuntimeFolder(),
-      keepCaches(),
-      features(karafStandardRepo, "eventadmin"),
+      configureConsole().ignoreLocalConsole(),
+      provision(scalaBundle),
+      features(karafStandardRepo , "scr"),
       junitBundles()
     )
   }
-
-  import org.junit.Assert._
 
   @Test
   def truthy(): Unit = {

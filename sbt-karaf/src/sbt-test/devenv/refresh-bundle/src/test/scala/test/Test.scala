@@ -11,11 +11,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ops4j.pax.exam.Configuration
 import org.ops4j.pax.exam.{Option => PaxOption}
+import org.ops4j.pax.exam.CoreOptions._
+import org.ops4j.pax.exam.karaf.options._, KarafDistributionOption._
 import org.ops4j.pax.exam.junit.PaxExam
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy
 import org.ops4j.pax.exam.spi.reactors.PerMethod
 import java.io.File
 import org.osgi.framework.{Bundle, BundleContext}
+import org.junit.Assert._
 
 @RunWith(classOf[PaxExam])
 @ExamReactorStrategy(Array(classOf[PerMethod]))
@@ -25,26 +28,22 @@ class SampleTest {
 
   @Configuration
   def config(): Array[PaxOption] = {
-    import org.ops4j.pax.exam.CoreOptions._
-    import org.ops4j.pax.exam.karaf.options._, KarafDistributionOption._
-
-   val karafVersion = "4.0.0.M2"
 
     val karafUrl = maven()
       .groupId("org.apache.karaf")
-      .artifactId("apache-karaf")
+      .artifactId("apache-karaf-minimal")
       .versionAsInProject()
-//      .version(karafVersion)
       .`type`("tar.gz")
     val karafStandardRepo = maven()
       .groupId("org.apache.karaf.features")
       .artifactId("standard")
       .classifier("features")
-      .version(karafVersion)
+      .versionAsInProject()
       .`type`("xml")
-
-    val osgiBundle = bundle("mvn:org.osgi/org.osgi.core/6.0.0") // .versionAsInProject()
-    val scalaBundle = bundle("mvn:org.scala-lang/scala-library/2.11.6") // .versionAsInProject()
+    val scalaBundle = mavenBundle()
+      .groupId("org.scala-lang")
+      .artifactId("scala-library")
+      .versionAsInProject()
 
     options(
       editConfigurationFilePut("etc/org.ops4j.pax.url.mvn.cfg", "org.ops4j.pax.url.mvn.localRepository", "~/.m2/repository"),
@@ -63,8 +62,6 @@ class SampleTest {
       junitBundles()
     )
   }
-
-  import org.junit.Assert._
 
   @Test
   def truthy(): Unit = {

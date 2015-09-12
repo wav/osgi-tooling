@@ -17,14 +17,12 @@ object KarafPackagingKeys {
   lazy val featuresProjectFeature  = taskKey[Feature]("The project feature to add to features.xml")
   lazy val featuresAddDependencies = settingKey[Boolean](
     s"""Add bundles in feature repositories.
-       |Warning: Attempt to download feature repositories before the project is loading.""".stripMargin)
+       |Warning: Attempts to download feature descriptors before the project is loading.""".stripMargin)
 
   /**
-   * When running pax exam in maven, the maven-depends-plugin generates a dependencies.properties file
-   * that allows the user to use the `.versionAsInProject()` method that reads from that file.
-   * This task generates this file so tests can use that functionality.
+   * Usage hint: makes the use of `.versionAsInProject()` available in pax-exam tests
    */
-  lazy val generateDependsFile = taskKey[File](s"${DependenciesProperties.jarPath} from `depends-maven-plugin`")
+  lazy val shouldGenerateDependsFile = settingKey[Boolean]("Generate a dependencies.properties file like the `maven-depends-plugin`")
 
 }
 
@@ -41,6 +39,9 @@ object SbtKarafPackaging extends AutoPlugin {
       Seq(onLoad in Global ~= (Internal.addDependenciesInFeaturesRepositories compose _))
 
   }
+
+  override def requires =
+    sbt.plugins.MavenResolverPlugin
 
   override def globalSettings =
     autoImport.addDependenciesInFeaturesRepositoriesSettings

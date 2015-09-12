@@ -2,8 +2,8 @@ package wav.devtools.sbt.karaf.packaging
 
 import sbt.Keys._
 import sbt._
-import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
-import wav.devtools.sbt.karaf.packaging.model._
+import wav.devtools.sbt.karaf.packaging
+import packaging.model._, FeaturesXml._
 
 object KarafPackagingDefaults {
 
@@ -57,25 +57,26 @@ object KarafPackagingDefaults {
     feature(name.value, version.value, bundles ++ features)
   }
 
-  lazy val generateDependsFileTask = Def.task {
-    val f = target.value / "dependencies.properties"
-    val artifacts = for {
-      conf <- update.value.configurations
-      moduleReport <- conf.modules
-      (a, _) <- moduleReport.artifacts
-    } yield {
-        val m = moduleReport.module
-        DependenciesProperties.Artifact(m.organization, a.name, m.revision, conf.configuration, a.`type`)
-      }
-    val fcontent = DependenciesProperties(
-      DependenciesProperties.Project(organization.value, name.value, version.value),
-      artifacts)
-    IO.write(f, fcontent)
-    f
+  lazy val generateDependsFileTask: SbtTask[Seq[File]] = Def.task {
+    if (shouldGenerateDependsFile.value) {
+      val f = (resourceManaged in Compile).value / packaging.model.DependenciesProperties.jarPath
+      val artifacts = for {
+        conf <- update.value.configurations
+        moduleReport <- conf.modules
+        (a, _) <- moduleReport.artifacts
+      } yield {
+          val m = moduleReport.module
+          DependenciesProperties.Artifact(m.organization, a.name, m.revision, conf.configuration, a.`type`)
+        }
+      val fcontent = DependenciesProperties(
+        DependenciesProperties.Project(organization.value, name.value, version.value),
+        artifacts)
+      IO.write(f, fcontent)
+      Seq(f)
+    } else Seq.empty
   }
 
-  lazy val featuresPackagedArtifactsTask: SbtTask[Map[
-    Artifact, File]] = Def.task {
+  lazy val featuresPackagedArtifactsTask: SbtTask[Map[Artifact, File]] = Def.task {
     val pas = packagedArtifacts.value
     featuresFile.value
       .map(f => pas.updated(Artifact(name.value, "xml", "xml", "features"), f))
@@ -93,8 +94,9 @@ object KarafPackagingDefaults {
         featuresSelected := featuresSelectedTask.value,
         featuresProjectBundle := featuresProjectBundleTask.value,
         featuresProjectFeature := featuresProjectFeatureTask.value,
-        generateDependsFile := generateDependsFileTask.value,
         packagedArtifacts <<= featuresPackagedArtifactsTask,
-        featuresAddDependencies := false)
+        featuresAddDependencies := false,
+        shouldGenerateDependsFile := false,
+        resourceGenerators in Compile <+= generateDependsFileTask)
 
 }

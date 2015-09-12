@@ -38,7 +38,3 @@ Problems with feature/bundle deployments that aren't visible in SBT can be viewe
 ```bash
 karaf> log:tail
 ```
-
-### Other settings
-
-> `paxSettings` is for running a pax test with the pax version defined in this plugin. Treat it as informational, it's slow.
