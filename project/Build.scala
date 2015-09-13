@@ -50,7 +50,6 @@ object OsgiToolingBuild extends Build {
     externalResolvers ++= Seq(
       Resolver.sbtPluginRepo("releases"),
       Resolver.typesafeIvyRepo("releases")),
-    updateOptions := updateOptions.value.withCachedResolution(true),
     publishArtifact in Compile := true,
     publishArtifact in Test := false,
     scalaVersion := "2.10.5",

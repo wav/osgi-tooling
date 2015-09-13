@@ -1,1 +1,1 @@
-libraryDependencies += "org.rauschig" % "jarchivelib" % "0.7.1"
+addSbtPlugin("wav.devtools" % "sbt-karaf-packaging" % sys.props("project.version"))

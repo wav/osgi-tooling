@@ -24,6 +24,11 @@ object KarafPackagingKeys {
    */
   lazy val shouldGenerateDependsFile = settingKey[Boolean]("Generate a dependencies.properties file like the `maven-depends-plugin`")
 
+  lazy val karafDistribution = settingKey[KarafDistribution]("The archive and the archive's subdirectory for a karaf distribution")
+  lazy val karafSourceDistribution = settingKey[File]("The original karaf archive")
+  lazy val downloadKarafDistribution = taskKey[Option[File]]("Download the original karaf archive if it doesn't exist")
+  lazy val unpackKarafDistribution = taskKey[File]("Unpack the original karaf archive")
+
 }
 
 object SbtKarafPackaging extends AutoPlugin {
@@ -33,10 +38,14 @@ object SbtKarafPackaging extends AutoPlugin {
     val KarafPackagingKeys = wav.devtools.sbt.karaf.packaging.KarafPackagingKeys
 
     def defaultKarafPackagingSettings: Seq[Setting[_]] =
-      KarafPackagingDefaults.featuresSettings
+      KarafPackagingDefaults.featuresSettings ++
+        KarafPackagingDefaults.karafDistributionSettings
 
     def addDependenciesInFeaturesRepositoriesSettings: Seq[Setting[_]] =
       Seq(onLoad in Global ~= (Internal.addDependenciesInFeaturesRepositories compose _))
+
+    lazy val shouldDownloadKarafDistribution: Setting[_] =
+      KarafPackagingKeys.downloadKarafDistribution := Some(KarafPackagingDefaults.downloadKarafDistributionTask.value)
 
   }
 

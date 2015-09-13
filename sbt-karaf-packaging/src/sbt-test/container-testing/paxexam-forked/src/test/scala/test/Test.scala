@@ -19,6 +19,7 @@ import org.osgi.framework.{Bundle, BundleContext}
 import org.ops4j.pax.exam.CoreOptions._
 import org.ops4j.pax.exam.karaf.options._, KarafDistributionOption._
 import org.junit.Assert._
+import java.net.URI
 
 @RunWith(classOf[PaxExam])
 @ExamReactorStrategy(Array(classOf[PerMethod]))
@@ -47,13 +48,23 @@ class SampleTest {
       .artifactId("scala-library")
       .versionAsInProject()
 
+    val karafDistOption = {
+      val file = System.getProperty("karaf.distribution", "NOT_SET")
+      val opt = {
+        if (file == "NOT_SET")
+          karafDistributionConfiguration().frameworkUrl(karafUrl)
+        else
+          karafDistributionConfiguration().frameworkUrl(file)
+      }
+      opt
+        .unpackDirectory(new File("target", "exam"))
+        .useDeployFolder(false)
+    }
+
     options(
       // KarafDistributionOption.debugConfiguration("5005", true),
       editConfigurationFilePut("etc/org.ops4j.pax.url.mvn.cfg", "org.ops4j.pax.url.mvn.localRepository", "~/.m2/repository"),
-      karafDistributionConfiguration()
-        .frameworkUrl(karafUrl)
-        .unpackDirectory(new File("target", "exam"))
-        .useDeployFolder(false),
+      karafDistOption,
       keepRuntimeFolder(),
       configureConsole().ignoreLocalConsole(),
       provision(scalaBundle),

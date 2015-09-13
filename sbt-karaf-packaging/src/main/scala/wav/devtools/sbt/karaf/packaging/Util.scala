@@ -1,14 +1,17 @@
 package wav.devtools.sbt.karaf.packaging
 
-import java.io.{FileInputStream, File, InputStream, StringWriter}
-import javax.xml.transform.{OutputKeys, TransformerFactory}
+import java.io.{File, FileInputStream, InputStream, StringWriter}
+import java.net.{URI, URL}
+import java.util.jar.{JarInputStream, Manifest => JManifest}
 import javax.xml.transform.stream.{StreamResult, StreamSource}
+import javax.xml.transform.{OutputKeys, TransformerFactory}
 import javax.xml.validation.SchemaFactory
-import collection.JavaConversions._
-import org.apache.commons.lang3.text.StrSubstitutor
-import sbt.IO
-import java.util.jar.{Manifest => JManifest, JarInputStream}
 
+import org.apache.commons.lang3.text.StrSubstitutor
+import org.rauschig.jarchivelib._
+import sbt.{IO, MavenRepository}
+
+import scala.collection.JavaConversions._
 import scala.xml._
 
 private[packaging] object Util {
@@ -56,6 +59,58 @@ private[packaging] object Util {
     val is = new FileInputStream(path)
     val jar = new JarInputStream(is)
     jar.getManifest
+  }
+
+  def unpack(archive: File, outDir: File, overwrite: Boolean = false): Unit = {
+    require(archive.exists(), s"$archive not found.")
+    if (overwrite && outDir.exists()) outDir.delete()
+    if (!outDir.exists()) {
+      val archiver: Archiver =
+        if (archive.getName.endsWith(".tar.gz")) {
+          ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP)
+        } else if (archive.getName.endsWith(".zip")) {
+          ArchiverFactory.createArchiver(ArchiveFormat.ZIP)
+        } else {
+          sys.error(s"Unknown format for $archive")
+          ???
+        }
+      archiver.extract(archive, outDir)
+    }
+  }
+
+  def download(uri: URI, collect: File => File, resolvers: Seq[MavenRepository] = Seq.empty): Option[File] = {
+    def tryDownload(url: URL): Option[File] =
+      IO.withTemporaryFile("download", "") { f =>
+        var downloaded = false
+        try {
+          val proto = url.getProtocol()
+          if (proto.startsWith("http")) {
+            IO.download(url, f)
+            downloaded = true
+          } else if (proto == null || proto == "file") {
+            downloaded = new File(uri).exists()
+          }
+        } catch {
+          case _: Exception =>
+            println(s"Failed to download ${uri.toString}")
+        }
+        if (downloaded) Some(collect(f)) else None
+      }
+    val result: Option[File] = uri.getScheme match {
+      case "file" =>
+        Some(new File(uri))
+      case "mvn" =>
+        val path = org.apache.karaf.util.maven.Parser.pathFromMaven(uri.toString)
+        // true > false, so .sortBy(!_.isCache) will select cache repos first.
+        resolvers.sortBy(!_.isCache).flatMap { r =>
+          val url = new URL(s"${r.root}$path")
+          tryDownload(url)
+        }.headOption
+      case "http" | "https" =>
+        tryDownload(uri.toURL)
+      case _: String => None
+    }
+    result.filter(_.exists())
   }
 
 }

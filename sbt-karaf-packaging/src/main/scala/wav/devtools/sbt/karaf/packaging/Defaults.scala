@@ -83,6 +83,46 @@ object KarafPackagingDefaults {
       .getOrElse(pas)
   }
 
+  lazy val downloadKarafDistributionTask: SbtTask[File] = Def.task {
+    val source = karafDistribution.value
+    val archive = karafSourceDistribution.value
+    if (!archive.exists) {
+      val rs = resolvers.value.collect { case r: MavenRepository => r }.sortBy(_.isCache)
+      val result = Util.download(source.uri, { temp => IO.copyFile(temp, archive); archive }, rs)
+      require(result.isDefined, s"Couldn't download $source")
+    }
+    archive
+  }
+
+  lazy val unpackKarafDistributionTask: SbtTask[File] = Def.task {
+    val source = karafDistribution.value
+    val archive: File = {
+      val f: File = karafSourceDistribution.value
+      if (f.exists()) f
+      else downloadKarafDistribution.value.getOrElse(f)
+    }
+    val karafDist = target.value / "karaf-dist"
+    Util.unpack(archive, karafDist)
+    val contentPath = Option(source.contentPath).filterNot(_.isEmpty).map(karafDist / _)
+    val finalKarafDist = contentPath getOrElse karafDist
+    require(finalKarafDist.isDirectory(), s"$finalKarafDist not found")
+    finalKarafDist
+  }
+
+  val KarafMinimalDistribution =
+    KarafDistribution(
+      uri(s"mvn:org.apache.karaf/apache-karaf-minimal/4.0.1/tar.gz"),
+      s"apache-karaf-minimal-4.0.1")
+
+  lazy val karafDistributionSettings: Seq[Setting[_]] =
+    Seq(
+      libraryDependencies += "org.apache.karaf" % "apache-karaf-minimal" % "4.0.1" from(karafSourceDistribution.value.toURI.toString),
+      update <<= update.dependsOn(downloadKarafDistribution),
+      karafDistribution := KarafMinimalDistribution,
+      karafSourceDistribution := target.value / s"apache-karaf-minimal-4.0.1.tar.gz",
+      unpackKarafDistribution := unpackKarafDistributionTask.value,
+      downloadKarafDistribution := None)
+
   lazy val featuresSettings: Seq[Setting[_]] =
       Internal.settings ++
       Seq(

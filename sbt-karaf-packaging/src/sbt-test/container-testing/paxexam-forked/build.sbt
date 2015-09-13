@@ -1,4 +1,5 @@
-import wav.devtools.sbt.karaf.packaging.SbtKarafPackaging, SbtKarafPackaging.autoImport._
+import wav.devtools.sbt.karaf.packaging.KarafPackagingKeys._
+import wav.devtools.sbt.karaf.packaging.{SbtKarafPackaging, KarafPackagingDefaults}, SbtKarafPackaging.autoImport._
 import KarafPackagingKeys._
 
 import com.typesafe.sbt.osgi.SbtOsgi, SbtOsgi.autoImport._
@@ -24,23 +25,17 @@ OsgiKeys.importPackage := Seq(
  * Pax exam dependencies: // https://ops4j1.jira.com/wiki/display/PAXEXAM4/Karaf+Container
  */
 
-resolvers := Seq(
+resolvers in ThisBuild := Seq(
   Resolver.mavenLocal,
   DefaultMavenRepository)
-
-val vKaraf = "4.0.1"
-
-val assemblyPath = Resolver.publishMavenLocal.rootFile / "org/apache/karaf" / "apache-karaf-minimal" / vKaraf / "apache-karaf-minimal.tar.gz"
-
-val assembly = "org.apache.karaf" % "apache-karaf-minimal" % vKaraf from(assemblyPath.toURI.toString)
 
 val vPaxExam = "4.6.0"
 
 libraryDependencies ++=
   Seq(
+    "org.osgi" % "org.osgi.core" % "6.0.0",
     FeatureID("org.apache.karaf.features", "standard", "4.0.1"),
 
-    assembly % "test",
     "org.ops4j.pax.exam" % "pax-exam" % vPaxExam % "test",
     "org.ops4j.pax.exam" % "pax-exam-container-karaf" % vPaxExam % "test",
     "org.ops4j.pax.url" % "pax-url-aether" % "1.6.0" % "test",
@@ -51,6 +46,12 @@ libraryDependencies ++=
 
 shouldGenerateDependsFile := true
 
+shouldDownloadKarafDistribution
+
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
 
+javaOptions in Test += s"-Dkaraf.distribution=${karafSourceDistribution.value.toURI.toString}"
+
 fork in Test := true  // IMPORTANT, forking ensures that the container starts with the correct classpath
+
+logLevel := Level.Warn

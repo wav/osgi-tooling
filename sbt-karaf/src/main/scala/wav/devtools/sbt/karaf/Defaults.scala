@@ -14,26 +14,6 @@ import scala.util.{Failure, Success}
 
 object KarafDefaults {
 
-//  lazy val lazy val karafDistribution      = taskKey[Option[File]]("Karaf distribution defined in library dependencies")      = taskKey[Option[File]]("Karaf distribution defined in library dependencies")
-//
-//  libraryDependencies += Dependencies.Karaf.assembly
-//
-//  lazy val karafDistributionTask = Def.task {
-//    val km = Dependencies.Karaf.assembly
-//    (for {
-//      ka <- km.explicitArtifacts
-//      if (ka.`type` == "tar.gz")
-//      cr <- update.value.configurations
-//      mr <- cr.modules
-//      m = mr.module
-//      if (m.organization == km.organization &&
-//          m.name == km.name)
-//      (a, f) <- mr.artifacts
-//      if (ka.name == a.name &&
-//          ka.`type` == a.`type`)
-//    } yield f).headOption
-//  }
-
   lazy val karafBundleArgsSetting = Def.setting(BundleStartArgs(organization.value + "." + name.value))
 
   lazy val karafContainerArgsSetting = Def.setting(DefaultContainerArgs)
@@ -114,7 +94,6 @@ object KarafDefaults {
     karafRMIConnection := new AtomicReference(None),
     karafResetServer := karafResetServerTask.value,
     karafStatus := ???,
-//    karafDistribution := karafDistributionTask.value,
     karafBundleStartArgs := karafBundleArgsSetting.value,
     karafContainerArgs := karafContainerArgsSetting.value,
     karafDeployFeature := karafDeployFeatureTask.value,
