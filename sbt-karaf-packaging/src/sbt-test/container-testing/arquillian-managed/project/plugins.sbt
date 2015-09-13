@@ -1,0 +1,1 @@
+libraryDependencies += "org.rauschig" % "jarchivelib" % "0.7.1"

@@ -13,32 +13,7 @@ object Dependencies {
   val junitInterface = "com.novocode" % "junit-interface" % "0.11" % "test"
   val scalaTest      = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
   val ariesJmx       = "org.apache.aries.jmx" % "org.apache.aries.jmx" % "1.1.5"
-
-  /**
-   * Pax exam dependencies: // https://ops4j1.jira.com/wiki/display/PAXEXAM4/Karaf+Container
-   */
-  val vPaxExam       = "4.6.0"
-  val paxExamKaraf = Seq(
-    osgiCore,
-    junit,
-    junitInterface,
-    Karaf.assembly,
-    "org.ops4j.pax.exam" % "pax-exam" % vPaxExam % "test",
-    "org.ops4j.pax.exam" % "pax-exam-container-karaf" % vPaxExam % "test",
-    "org.ops4j.pax.url" % "pax-url-aether" % "1.6.0" % "test",
-    "javax.inject" % "javax.inject" % "1" % "test",
-    "org.ops4j.pax.exam" % "pax-exam-junit4" % vPaxExam % "test"
-  )
-
-  val arquillianRemoteKaraf = Seq(
-    osgiCore,
-    osgiEnterprise,
-    junitInterface,
-    "org.apache.felix" % "org.apache.felix.framework" % "5.0.1" % "provided",
-    "org.apache.felix" % "org.apache.felix.main" % "5.0.1" % "provided",
-    "org.jboss" % "jboss-vfs" % "3.2.10.Final" % "test",
-    "org.jboss.arquillian.junit" % "arquillian-junit-container" % "1.1.2.Final" % "test",
-    "org.jboss.arquillian.container" % "arquillian-container-karaf-remote" % "2.1.0.CR18" % "test")
+  val jarchivelib    = "org.rauschig" % "jarchivelib" % "0.7.1"
 
   object Karaf {
 
