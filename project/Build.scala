@@ -4,12 +4,14 @@ import sbt.ScriptedPlugin._
 import wav.devtools.sbt.karaf.Dependencies._
 
 object OsgiToolingBuild extends Build {
-  
-  lazy val `karaf-mbean-wrapper` = project
+
+  lazy val `osgi-tooling` = project.in(file("."))
+    .settings(Seq(publishArtifact := false))
+    .aggregate(`karaf-manager`, `sbt-karaf`, `sbt-karaf-packaging`)
+
+  lazy val `karaf-manager` = project
     .settings(commonSettings: _*)
-    .settings(
-      publishArtifact in Compile := false,
-      libraryDependencies ++= Karaf.common)
+    .settings(libraryDependencies ++= Karaf.common)
 
   lazy val `sbt-karaf-packaging` = project
     .settings(commonPluginSettings: _*)
@@ -37,12 +39,10 @@ object OsgiToolingBuild extends Build {
       })
 
   lazy val `sbt-karaf` = project
-    .dependsOn(`sbt-karaf-packaging`)
+    .dependsOn(`sbt-karaf-packaging`, `karaf-manager`)
     .settings(commonPluginSettings: _*)
     .settings(
-      libraryDependencies ++= Karaf.common :+ commonsLang,
-      unmanagedSourceDirectories in Compile ++= Seq(
-        (sourceDirectory in Compile in `karaf-mbean-wrapper`).value))
+      libraryDependencies += scalaTest)
 
   val commonSettings = Seq(
     organization in ThisBuild := "wav.devtools",
