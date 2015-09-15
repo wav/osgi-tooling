@@ -23,4 +23,6 @@ featuresRequired := Map("log" -> "*")
 
 featuresAddDependencies := true
 
-libraryDependencies ++= FeatureID("org.apache.karaf.features", "standard", "4.0.0")
+libraryDependencies += FeatureID("org.apache.karaf.features", "standard", "4.0.0")
+
+logLevel := Level.Warn

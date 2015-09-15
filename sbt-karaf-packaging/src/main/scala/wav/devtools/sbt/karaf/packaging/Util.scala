@@ -78,23 +78,27 @@ private[packaging] object Util {
     }
   }
 
-  def download(uri: URI, collect: File => File, resolvers: Seq[MavenRepository] = Seq.empty): Option[File] = {
+  def download(uri: URI, target: File, resolvers: Seq[MavenRepository] = Seq.empty): Boolean = {
     def tryDownload(url: URL): Option[File] =
       IO.withTemporaryFile("download", "") { f =>
-        var downloaded = false
+        var downloaded: File = null
         try {
+          println(s"Trying $url")
           val proto = url.getProtocol()
           if (proto.startsWith("http")) {
             IO.download(url, f)
-            downloaded = true
+            downloaded = f
           } else if (proto == null || proto == "file") {
-            downloaded = new File(uri).exists()
+            downloaded = new File(uri)
           }
         } catch {
           case _: Exception =>
             println(s"Failed to download ${uri.toString}")
         }
-        if (downloaded) Some(collect(f)) else None
+        if (downloaded.exists() && downloaded.length() > 0) {
+          IO.copyFile(downloaded, target)
+          Some(downloaded)
+        } else None
       }
     val result: Option[File] = uri.getScheme match {
       case "file" =>
@@ -102,15 +106,14 @@ private[packaging] object Util {
       case "mvn" =>
         val path = org.apache.karaf.util.maven.Parser.pathFromMaven(uri.toString)
         // true > false, so .sortBy(!_.isCache) will select cache repos first.
-        resolvers.sortBy(!_.isCache).flatMap { r =>
-          val url = new URL(s"${r.root}$path")
-          tryDownload(url)
-        }.headOption
+        resolvers.sortBy(!_.isCache)
+          .map(r => tryDownload(new URL(s"${r.root}$path")))
+          .collectFirst { case Some(f) => f }
       case "http" | "https" =>
         tryDownload(uri.toURL)
       case _: String => None
     }
-    result.filter(_.exists())
+    result.filter(_.exists()).isDefined
   }
 
 }

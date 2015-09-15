@@ -22,8 +22,6 @@ libraryDependencies ++= Seq(
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
 
-shouldDownloadKarafDistribution
-
 test in Test <<= (test in Test).dependsOn(unpackKarafDistribution)
 
 //fork in Test := true

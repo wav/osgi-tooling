@@ -46,8 +46,6 @@ libraryDependencies ++=
 
 shouldGenerateDependsFile := true
 
-shouldDownloadKarafDistribution
-
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
 
 javaOptions in Test += s"-Dkaraf.distribution=${karafSourceDistribution.value.toURI.toString}"
