@@ -7,6 +7,8 @@ import wav.devtools.karaf.mbeans._
 
 object KarafKeys {
 
+  lazy val karafStartServer     = taskKey[Unit]("Start the server and clean data and caches")
+  lazy val karafStopServer      = taskKey[Unit]("Stop the server and clean data and caches")
   lazy val karafResetServer     = taskKey[Unit]("Restart the server and clean data and caches")
   lazy val karafStatus          = taskKey[Unit]("Relevant status information")
   lazy val karafContainerArgs   = settingKey[ContainerArgs]("The remote Karaf container to connect to.")
@@ -17,13 +19,6 @@ object KarafKeys {
 
 }
 
-/**
- * There are 3 sets of functionality provided by this plugin.
- * - `featuresSettings` is for creating a features.xml artifact (default)
- * - `paxSettings` is for running a pax test with the pax version defined in this plugin
- * - `karafSettings` is for refreshing bundles and features on compile by
- * managing a karaf instance (via. RMI on a local jvm)
- */
 object SbtKaraf extends AutoPlugin {
 
   object autoImport {

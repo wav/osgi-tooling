@@ -1,11 +1,11 @@
 package wav.devtools.sbt.karaf
 
-import java.util.Date
 import java.util.concurrent.atomic.AtomicReference
 import javax.management.remote.JMXConnector
 
 import sbt.Keys._
 import sbt._
+import wav.devtools.karaf.manager._
 import wav.devtools.karaf.mbeans._, MBeanExtensions._
 import KarafKeys._
 import packaging.KarafPackagingKeys._
@@ -90,10 +90,40 @@ object KarafDefaults {
     if (!features.repoRemove(repo)) sys.error("Couldn't remove repository, " + repo)
   }
 
+  private lazy val karafContainer = settingKey[AtomicReference[Option[KarafContainer]]]("The managed karaf container")
+
+  lazy val karafStartServerTask = Def.task {
+    val log = streams.value.log
+    log.warn("Ignoring `karafContainerArgsSetting`")
+    val ref = karafContainer.value
+    if (ref.get.isEmpty) {
+      val karafBase = unpackKarafDistribution.value
+      val config = KarafContainer.configuration(karafBase.getAbsolutePath)
+      log.debug(config.toString)
+      val container = new KarafContainer(config)
+      container.start()
+      Thread.sleep(500)
+      if (container.isAlive) ref.set(Some(container))
+      else sys.error(container.log)
+    }
+  }
+
+  lazy val karafStopServerTask = Def.task {
+    val ref = karafContainer.value
+    if (ref.get.isDefined) {
+      val Some(container) = ref.get
+      container.stop()
+      ref.set(None)
+    }
+  }
+
   lazy val karafSettings: Seq[Setting[_]] = Seq(
     karafRMIConnection := new AtomicReference(None),
+    karafContainer := new AtomicReference(None),
+    karafStartServer := karafStartServerTask.value,
+    karafStopServer := karafStopServerTask.value,
     karafResetServer := karafResetServerTask.value,
-    karafStatus := ???,
+    karafStatus := println(karafContainer.value.get.foreach(c => println("Alive: " + c.isAlive))),
     karafBundleStartArgs := karafBundleArgsSetting.value,
     karafContainerArgs := karafContainerArgsSetting.value,
     karafDeployFeature := karafDeployFeatureTask.value,

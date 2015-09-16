@@ -1,0 +1,1 @@
+addSbtPlugin("wav.devtools" % "sbt-karaf" % sys.props("project.version"))
