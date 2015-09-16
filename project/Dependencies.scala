@@ -7,6 +7,7 @@ object Dependencies {
   val slf4j          = "org.slf4j" % "slf4j-api" % "1.7.10"
   val `slf4j-simple` = "org.slf4j" % "slf4j-simple" % "1.7.10"
   val commonsLang    = "org.apache.commons" % "commons-lang3" % "3.4"
+  val commonsIo      = "commons-io" % "commons-io" % "2.4"
   val osgiCore       = "org.osgi" % "org.osgi.core" % "5.0.0"
   val osgiEnterprise = "org.osgi" % "org.osgi.enterprise" % "5.0.0"
   val junit          = "junit" % "junit" % "4.11" % "test"
@@ -50,7 +51,7 @@ object Dependencies {
     val features = kmodule("features")
     // {{org.apache.karaf:type=instance,name=*}}: management of the instances.
     val instance = kmodule("instance")
-    // {{org.apache.karaf:type=system,name=*}}: management of the instances.
+    // {{org.apache.karaf:type=system,name=*}}: management of the Apache Karaf container.
     val system = kmodule("system")
 
     private def kmodule(module: String) =

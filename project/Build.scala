@@ -11,7 +11,10 @@ object OsgiToolingBuild extends Build {
 
   lazy val `karaf-manager` = project
     .settings(commonSettings: _*)
-    .settings(libraryDependencies ++= Karaf.common)
+    .settings(
+      libraryDependencies ++= Karaf.common :+ commonsIo,
+      testOptions in Test +=
+        Tests.Setup(() => sys.props += "karaf.base" -> ((baseDirectory in ThisBuild).value / "karaf").getAbsolutePath))
 
   lazy val `sbt-karaf-packaging` = project
     .settings(commonPluginSettings: _*)
@@ -21,7 +24,6 @@ object OsgiToolingBuild extends Build {
         Seq(
           jarchivelib,
           osgiCore,
-          scalaTest,
           commonsLang,
           slf4j),
       managedResources in Test <++= Def.task {
@@ -41,8 +43,6 @@ object OsgiToolingBuild extends Build {
   lazy val `sbt-karaf` = project
     .dependsOn(`sbt-karaf-packaging`, `karaf-manager`)
     .settings(commonPluginSettings: _*)
-    .settings(
-      libraryDependencies += scalaTest)
 
   val commonSettings = Seq(
     organization in ThisBuild := "wav.devtools",
@@ -53,6 +53,7 @@ object OsgiToolingBuild extends Build {
     publishArtifact in Compile := true,
     publishArtifact in Test := false,
     scalaVersion := "2.10.5",
+    libraryDependencies += scalaTest,
     scalacOptions in ThisBuild ++= Seq(
       "-deprecation", 
       "-feature", 
