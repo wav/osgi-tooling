@@ -30,11 +30,11 @@ class SampleTest {
   @Configuration
   def config(): Array[PaxOption] = {
 
-    val karafUrl = maven()
-      .groupId("org.apache.karaf")
-      .artifactId("apache-karaf-minimal")
-      .versionAsInProject()
-      .`type`("tar.gz")
+    // val karafUrl = maven()
+    //   .groupId("org.apache.karaf")
+    //   .artifactId("apache-karaf-minimal")
+    //   .versionAsInProject()
+    //   .`type`("tar.gz")
 
     val karafStandardRepo = maven()
       .groupId("org.apache.karaf.features")
@@ -50,25 +50,20 @@ class SampleTest {
 
     val karafDistOption = {
       val file = System.getProperty("karaf.distribution", "NOT_SET")
-      val opt = {
-        if (file == "NOT_SET")
-          karafDistributionConfiguration().frameworkUrl(karafUrl)
-        else
-          karafDistributionConfiguration().frameworkUrl(file)
-      }
-      opt
+      karafDistributionConfiguration().frameworkUrl(file)
         .unpackDirectory(new File("target", "exam"))
         .useDeployFolder(false)
     }
 
+    // takes 33s
     options(
       // KarafDistributionOption.debugConfiguration("5005", true),
       editConfigurationFilePut("etc/org.ops4j.pax.url.mvn.cfg", "org.ops4j.pax.url.mvn.localRepository", "~/.m2/repository"),
       karafDistOption,
-      keepRuntimeFolder(),
       configureConsole().ignoreLocalConsole(),
+      configureConsole().ignoreRemoteShell(),
       provision(scalaBundle),
-      features(karafStandardRepo , "scr"),
+      keepCaches(),
       junitBundles()
     )
   }

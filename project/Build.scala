@@ -50,6 +50,9 @@ object OsgiToolingBuild extends Build {
     externalResolvers ++= Seq(
       Resolver.sbtPluginRepo("releases"),
       Resolver.typesafeIvyRepo("releases")),
+    publishLocalConfiguration ~= { conf =>
+      new PublishConfiguration(conf.ivyFile, conf.resolverName, conf.artifacts, conf.checksums, conf.logging, true)
+    },
     publishArtifact in Compile := true,
     publishArtifact in Test := false,
     scalaVersion := "2.10.5",

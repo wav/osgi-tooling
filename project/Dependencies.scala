@@ -18,9 +18,9 @@ object Dependencies {
 
   object Karaf {
 
-    val Version = "4.0.0"
+    val Version = "4.0.1"
 
-    val assembly = (("org.apache.karaf" % "apache-karaf" % "4.0.1")
+    val assembly = (("org.apache.karaf" % "apache-karaf" % Version)
       .artifacts(Artifact("apache-karaf", `type` = "tar.gz", extension = "tar.gz"))
       .intransitive)
 

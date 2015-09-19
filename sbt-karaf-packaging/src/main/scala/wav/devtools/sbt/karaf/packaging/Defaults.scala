@@ -88,10 +88,18 @@ object KarafPackagingDefaults {
     val archive = target.value / dist.artifactName
     if (archive.exists()) Some(archive)
     else {
-      val rs = fullResolvers.value.collect { case r: MavenRepository => r }
       // sbt-maven-resolver doesn't like artifacts that are non jar which don't have a classifier. (sbt 0.13.9)
       // So we bypass it by downloading it manually without using the update report.
-      if (Util.download(dist.url, archive, rs)) Some(archive) else None
+      if (dist.url.getScheme.startsWith("mvn")) {
+        val rs = fullResolvers.value.collect { case r: MavenRepository => r }
+        val mavenLocal = new File(new URI(Resolver.mavenLocal.root))
+        val result = Util.downloadMavenArtifact(dist.url, mavenLocal, rs)
+        result map { f =>
+          IO.copyFile(f, archive)
+          f
+        }
+      } else if (Util.download(dist.url, archive)) Some(archive)
+      else None
     }
   }
 

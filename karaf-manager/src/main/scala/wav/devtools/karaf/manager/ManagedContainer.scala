@@ -56,7 +56,16 @@ class KarafContainer(val config: Configuration) {
   }
 
   def stop(): Unit =
-    if (process != null) process.destroyForcibly()
+    if (process != null && process.isAlive) {
+      try {
+        val connection = MBeanConnection(config.containerArgs, 0, 5).get
+        val system = MBeanServices(connection).System.get
+        system.halt()
+      }
+      finally {
+        process.destroyForcibly()
+      }
+    }
 
   def isAlive: Boolean = process != null && process.isAlive()
 

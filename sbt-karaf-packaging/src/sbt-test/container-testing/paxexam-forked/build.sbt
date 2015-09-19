@@ -48,7 +48,10 @@ shouldGenerateDependsFile := true
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
 
-javaOptions in Test += s"-Dkaraf.distribution=${karafSourceDistribution.value.toURI.toString}"
+javaOptions +=
+  s"-Dkaraf.distribution=${(target.value / karafDistribution.value.artifactName).toURI.toString}"
+
+test in Test <<= (test in Test).dependsOn(karafSourceDistribution)
 
 fork in Test := true  // IMPORTANT, forking ensures that the container starts with the correct classpath
 

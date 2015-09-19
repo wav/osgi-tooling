@@ -15,14 +15,9 @@ OsgiKeys.exportPackage := Seq(organization.value + ".refreshbundle")
 
 OsgiKeys.importPackage := Seq("scala", "scala.*")
 
-/**
- * Depend on the logging feature.
- */
-
-featuresRequired := Map("log" -> "*")
-
-featuresAddDependencies := true
-
-libraryDependencies += FeatureID("org.apache.karaf.features", "standard", "4.0.0")
+libraryDependencies ++= Seq(
+	"org.slf4j" % "slf4j-api" % "1.7.10",
+	"org.osgi" % "org.osgi.core" % "5.0.0",
+	FeatureID("org.apache.karaf.features", "standard", "4.0.1"))
 
 logLevel := Level.Warn

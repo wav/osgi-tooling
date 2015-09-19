@@ -1,17 +1,21 @@
 package wav.devtools.sbt.karaf.packaging
 
-import java.io.{File, FileInputStream, InputStream, StringWriter}
+import java.io._
 import java.net.{URI, URL}
+import java.security.MessageDigest
+import java.util.Formatter
 import java.util.jar.{JarInputStream, Manifest => JManifest}
 import javax.xml.transform.stream.{StreamResult, StreamSource}
 import javax.xml.transform.{OutputKeys, TransformerFactory}
 import javax.xml.validation.SchemaFactory
+import org.apache.karaf.util.maven.Parser.pathFromMaven
 
 import org.apache.commons.lang3.text.StrSubstitutor
 import org.rauschig.jarchivelib._
 import sbt.{IO, MavenRepository}
 
 import scala.collection.JavaConversions._
+import scala.util.Try
 import scala.xml._
 
 private[packaging] object Util {
@@ -68,9 +72,11 @@ private[packaging] object Util {
       val archiver: Archiver =
         if (archive.getName.endsWith(".tar.gz")) {
           ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP)
-        } else if (archive.getName.endsWith(".zip")) {
+        }
+        else if (archive.getName.endsWith(".zip")) {
           ArchiverFactory.createArchiver(ArchiveFormat.ZIP)
-        } else {
+        }
+        else {
           sys.error(s"Unknown format for $archive")
           ???
         }
@@ -78,43 +84,79 @@ private[packaging] object Util {
     }
   }
 
-  def download(uri: URI, target: File, resolvers: Seq[MavenRepository] = Seq.empty): Boolean = {
-    def tryDownload(url: URL): Option[File] =
-      IO.withTemporaryFile("download", "") { f =>
-        var downloaded: File = null
-        try {
-          println(s"Trying $url")
-          val proto = url.getProtocol()
-          if (proto.startsWith("http")) {
-            IO.download(url, f)
-            downloaded = f
-          } else if (proto == null || proto == "file") {
-            downloaded = new File(uri)
-          }
-        } catch {
-          case _: Exception =>
-            println(s"Failed to download ${uri.toString}")
-        }
-        if (downloaded.exists() && downloaded.length() > 0) {
-          IO.copyFile(downloaded, target)
-          Some(downloaded)
-        } else None
-      }
-    val result: Option[File] = uri.getScheme match {
-      case "file" =>
-        Some(new File(uri))
-      case "mvn" =>
-        val path = org.apache.karaf.util.maven.Parser.pathFromMaven(uri.toString)
-        // true > false, so .sortBy(!_.isCache) will select cache repos first.
-        resolvers.sortBy(!_.isCache)
-          .map(r => tryDownload(new URL(s"${r.root}$path")))
-          .collectFirst { case Some(f) => f }
-      case "http" | "https" =>
-        tryDownload(uri.toURL)
-      case _: String => None
+  /** A naive downloader that checks the shasum  **/
+
+  def calculateSha1(f: File): String = {
+    val md = MessageDigest.getInstance("SHA1")
+    val fis = new FileInputStream(f)
+    val buf = new Array[Byte](1024)
+    var nread = fis.read(buf)
+    while (nread != -1) {
+      md.update(buf, 0, nread)
+      nread = fis.read(buf)
     }
-    result.filter(_.exists()).isDefined
+    md.digest().map(0xFF & _).map { "%02x".format(_) }.foldLeft("") { _ + _ }
   }
+
+  private def tryDownload(source: URL, target: File): Boolean =
+    IO.withTemporaryDirectory { dir =>
+      println(s"Trying $source")
+      val targetSha1 = new File(target.getParentFile, target.getName + ".sha1")
+      val sourceSha1 = new URL(source.toString + ".sha1")
+      val temp = new File(dir, target.getName)
+      val downloaded = Try(IO.download(source, temp)).isSuccess
+      val tempSha1 = new File(dir, target.getName + ".sha1")
+      def downloadedSha1 = Try(IO.download(sourceSha1, tempSha1)).isSuccess
+      if (!downloaded) false
+      else if (!downloadedSha1 || matchesShasum(source.toURI, temp, tempSha1)) {
+        IO.copyFile(temp, target)
+        IO.copyFile(tempSha1, targetSha1)
+        true
+      } else false
+    }
+
+  def matchesShasum(source: URI, f: File, sha1: File): Boolean = {
+    val actual = calculateSha1(f)
+    val expected = io.Source.fromFile(sha1).getLines.mkString
+    println(s"""|SHA1: $source
+                |      actual:   $actual
+                |      expected: $expected
+                """.stripMargin)
+    actual == expected
+  }
+
+  def downloadMavenArtifact(source: URI, localRepo: File, resolvers: Seq[MavenRepository] = Seq.empty): Option[File] = {
+    assert(source.getScheme.startsWith("mvn"))
+    val path = pathFromMaven(source.toString)
+    val target = new File(localRepo, path)
+    val targetSha1 = new File(localRepo, path + ".sha1")
+    if (!target.exists()) {
+      // true > false, so .sortBy(!_.isCache) will select cache repos first.
+      val result = resolvers.sortBy(!_.isCache)
+        .map(r => tryDownload(new URL(s"${r.root}$path"), target))
+        .headOption
+      if (result.isDefined) {
+        println(s"Downloaded $source to $target")
+        Some(target)
+      } else None
+    }
+    else if (targetSha1.exists() && matchesShasum(source, target, targetSha1)) {
+      println(s"Using cached file $target for $source")
+      Some(target)
+    }
+    else None
+  }
+
+  def download(source: URI, target: File): Boolean =
+    source.getScheme match {
+      case "file" =>
+        val targetSha1 = new File(target.getParentFile, target.getName + ".sha1")
+        targetSha1.exists() && matchesShasum(source, target, targetSha1) ||
+        target.exists()
+      case "http" | "https" =>
+        tryDownload(source.toURL, target)
+      case _: String => false
+    }
 
 }
 

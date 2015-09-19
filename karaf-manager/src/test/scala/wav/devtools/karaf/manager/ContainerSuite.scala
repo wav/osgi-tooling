@@ -5,6 +5,8 @@ import javax.management.remote.JMXConnector
 import org.scalatest.Spec
 import wav.devtools.karaf.mbeans.{MBeanServices, MBeanConnection}
 
+import scala.util.Try
+
 class ContainerSuite extends Spec {
 
   def `start and stop a karaf container`(): Unit = {
@@ -28,13 +30,19 @@ class ContainerSuite extends Spec {
       }
       finally
       {
-        if (container != null) connection.close()
-        container.stop()
-        println("container stop")
+        if (container != null) container.stop()
+        println("container stopped")
       }
     }
-
+    println("Starting up the container.")
     getName
+    println("Checking that the container cannot be reached")
+    assert(Try {
+      val connection = MBeanConnection(config.containerArgs, 0, 5).get
+      MBeanServices(connection).System.get.getName
+    }.isFailure)
+    println("Container cannot be reached! :)")
+    println("Starting up the container again.")
     getName
   }
 
