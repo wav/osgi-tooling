@@ -38,7 +38,6 @@ object Dependencies {
       Karaf.bundle,
       Karaf.config,
       Karaf.features,
-      Karaf.instance,
       Karaf.system)
 
     // Karaf's MBean dependencies, see: http://karaf.apache.org/manual/latest/users-guide/monitoring.html
@@ -49,8 +48,6 @@ object Dependencies {
     val bundle   = kmodule("bundle")
     // {{org.apache.karaf:type=feature,name=*}}: management of the Apache Karaf features.
     val features = kmodule("features")
-    // {{org.apache.karaf:type=instance,name=*}}: management of the instances.
-    val instance = kmodule("instance")
     // {{org.apache.karaf:type=system,name=*}}: management of the Apache Karaf container.
     val system = kmodule("system")
 

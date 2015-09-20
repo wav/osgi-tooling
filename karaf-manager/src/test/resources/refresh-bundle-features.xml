@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?><features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="refresh-bundle">
+  <feature version="0.1.0.SNAPSHOT" name="refresh-bundle">
+    <bundle>mvn:org.scala-lang/scala-library/2.11.7</bundle>
+    <bundle>mvn:org.slf4j/osgi-over-slf4j/1.7.12</bundle>
+    <bundle>mvn:org.osgi/org.osgi.core/6.0.0</bundle>
+    <bundle start="true">@refresh-bundle@</bundle>
+  </feature>
+</features>

@@ -30,7 +30,7 @@ object FeaturesXml {
 
   case class Bundle(
     url: String,
-    dependency: Boolean = false,
+    dependency: Boolean = true,
     start: Boolean = false,
     `start-level`: Option[Int] = None
     ) extends FeatureOption with ConditionalOption

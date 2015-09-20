@@ -47,12 +47,6 @@ object MBeanExtensions {
         !repos(uri)
       } else true
 
-    def repoAdd(uri: String): Boolean =
-      if (!repos(uri)) {
-        mbean.addRepository(uri)
-        repos(uri)
-      } else true
-
     def repoRefresh(uri: String): Boolean = {
       if (!repos(uri)) {
         mbean.addRepository(uri)
@@ -82,52 +76,6 @@ object MBeanExtensions {
           names <- table.getValue[Array[String]]("Bundles")
         } yield names
       result.getOrElse(Array()).toSet
-    }
-
-  }
-
-  implicit class RichInstancesMBean(mbean: karaf.instance.core.InstancesMBean) {
-
-    private def findFreePort: Option[Int] = {
-      var port: Option[Int] = None
-      try {
-        val server = new ServerSocket(0)
-        Some(server.getLocalPort)
-        server.close
-      } catch {
-        case _: IOException =>
-      }
-      port
-    }
-
-    private def instances(name: String): Option[CompositeData] =
-      get(mbean.getInstances, name)
-
-    def getInstance(name: String): Option[Instance] = {
-      for {
-        i <- instances(name)
-        sshPort <- i.getValue[Int]("SSH Port")
-        rmiRegistryPort <- i.getValue[Int]("RMI Registry Port")
-        rmiServerPort <- i.getValue[Int]("RMI Server Port")
-        state <- i.getValue[String]("State")
-        location <- i.getValue[String]("Location")
-        pid <- i.getValue[Int]("Pid")
-      } yield Instance(name, sshPort, rmiRegistryPort, rmiServerPort, state, location, pid)
-    }
-
-    def create(args: CreateInstanceArgs): Option[Instance] = {
-      mbean.createInstance(args.name, args.sshPort, args.rmiRegistryPort, args.rmiServerPort, args.location, args.javaOpts, args.features.mkString(""), args.repositories.mkString(""))
-      getInstance(args.name)
-    }
-
-    def clone(
-      name: String, cloneName: String, location: String,
-      sshPort: Int = 0,
-      rmiRegistryPort: Int = 0,
-      rmiServerPort: Int = 0,
-      javaOpts: String = null): Option[Instance] = {
-      mbean.cloneInstance(name, cloneName, sshPort, rmiRegistryPort, rmiServerPort, location, javaOpts)
-      getInstance(cloneName)
     }
 
   }

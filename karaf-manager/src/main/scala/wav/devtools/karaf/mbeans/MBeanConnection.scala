@@ -18,7 +18,7 @@ object MBeanConnection {
       environment.put(JMXConnector.CREDENTIALS, Array[String](creds.user, creds.pass))
       JMXConnectorFactory.connect(new JMXServiceURL(creds.serviceUrl), environment)
     }
-    .recoverWith {
+      .recoverWith {
       // retry if the server doesn't appear to be ready.
       case nobex: NoSuchObjectException if retries <= maxRetries =>
         Thread.sleep(1000 * retries)
@@ -43,30 +43,63 @@ object MBeanConnection {
     }
 
   @throws(classOf[Exception])
-	def get[T](connector: JMXConnector, query: String, clazz: Class[T], retries: Int = 0): Try[T] =
-		Try[T] {
+  def get[T](connector: JMXConnector, query: String, clazz: Class[T], retries: Int = 0): Try[T] =
+    Try[T] {
       val mbsc = connector.getMBeanServerConnection
-			val names: Set[ObjectInstance] = mbsc.queryMBeans(new ObjectName(query), null).toSet
-			require(names.toSeq.length > 0, s"MBean not found, query: $query")
-	  		JMX.newMBeanProxy(
-	    		mbsc,
-	    		names.toSeq(0).getObjectName,
-	    		clazz,
-	    		true)
-	  	}
+      val names: Set[ObjectInstance] = mbsc.queryMBeans(new ObjectName(query), null).toSet
+      require(names.toSeq.length > 0, s"MBean not found, query: $query")
+      JMX.newMBeanProxy(mbsc, names.toSeq(0).getObjectName, clazz, true)
+    }
 
 }
 
-case class MBeanServices(connector: JMXConnector) {
-	import org.apache.karaf
+class MBeanService[T](val mbeanQuery: String, val clazz: Class[T]) {
+  def newInvoker(connector: () => Try[JMXConnector]): MBeanInvoker[T] =
+    new MBeanInvoker(this,connector)
+}
 
-	private def get[T](query: String, clazz: Class[T]): Try[T] = 
-		MBeanConnection.get[T](connector, query, clazz)
+class MBeanInvoker[T](s: MBeanService[T], connector: () => Try[JMXConnector]) {
+  def apply[R](f: T => R): Try[R] =
+    for {
+      c <- connector()
+      mbean <- MBeanConnection.get[T](c, s.mbeanQuery, s.clazz)
+      result = f(mbean)
+      _ = c.close()
+    } yield result
+}
 
-	def Config = get("org.apache.karaf:type=config,name=*", classOf[karaf.config.core.ConfigMBean])
-	def Bundles = get("org.apache.karaf:type=bundle,name=*", classOf[karaf.bundle.core.BundlesMBean])
-	def FeaturesService = get("org.apache.karaf:type=feature,name=*", classOf[karaf.features.management.FeaturesServiceMBean])
-	def Instances = get("org.apache.karaf:type=instance,name=*", classOf[karaf.instance.core.InstancesMBean])
-  def System = get("org.apache.karaf:type=system,name=*", classOf[karaf.system.management.SystemMBean])
+case class Bundle(bundleId: Int, name: String, version: String, state: BundleState.Value)
 
+case class ContainerArgs(serviceUrl: String, user: String, pass: String)
+
+object ServiceUrl {
+
+  val Pattern = """service:jmx:rmi:///jndi/rmi://(.*):(.*)/(.*)""".r
+
+  def unapply(url: String): Option[ServiceUrl] =
+    url match {
+      case Pattern(host, port, instanceName) =>
+        Some(ServiceUrl(host, port.toInt, instanceName))
+      case _ => None
+    }
+}
+
+case class ServiceUrl(host: String, port: Int, instanceName: String) {
+  override def toString: String =
+    s"service:jmx:rmi:///jndi/rmi://${host}:${port}/${instanceName}"
+}
+
+object BundleState extends Enumeration {
+  val Error = Value("Error")
+  val Uninstalled = Value("Uninstalled")
+  val Installed = Value("Installed")
+  val Starting = Value("Starting")
+  val Stopping = Value("Starting")
+  val Resolved = Value("Resolved")
+  val Active = Value("Active")
+
+  private val lifecycle = Seq(Error, Installed, Resolved, Active)
+
+  def inState(expected: BundleState.Value, actual: BundleState.Value): Boolean =
+    lifecycle.indexOf(actual) >= lifecycle.indexOf(expected)
 }
