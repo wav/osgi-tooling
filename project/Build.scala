@@ -4,12 +4,17 @@ import sbt.ScriptedPlugin._
 import wav.devtools.sbt.karaf.Dependencies._
 
 object OsgiToolingBuild extends Build {
-  
-  lazy val `karaf-mbean-wrapper` = project
+
+  lazy val `osgi-tooling` = project.in(file("."))
+    .settings(Seq(publishArtifact := false))
+    .aggregate(`karaf-manager`, `sbt-karaf`, `sbt-karaf-packaging`)
+
+  lazy val `karaf-manager` = project
     .settings(commonSettings: _*)
     .settings(
-      publishArtifact in Compile := false,
-      libraryDependencies ++= Karaf.common)
+      libraryDependencies ++= Karaf.common :+ commonsIo,
+      testOptions in Test +=
+        Tests.Setup(() => sys.props += "karaf.base" -> ((baseDirectory in ThisBuild).value / "karaf").getAbsolutePath))
 
   lazy val `sbt-karaf-packaging` = project
     .settings(commonPluginSettings: _*)
@@ -17,8 +22,8 @@ object OsgiToolingBuild extends Build {
       libraryDependencies ++=
         features ++
         Seq(
+          jarchivelib,
           osgiCore,
-          scalaTest,
           commonsLang,
           slf4j),
       managedResources in Test <++= Def.task {
@@ -36,12 +41,8 @@ object OsgiToolingBuild extends Build {
       })
 
   lazy val `sbt-karaf` = project
+    .dependsOn(`sbt-karaf-packaging`, `karaf-manager`)
     .settings(commonPluginSettings: _*)
-    .settings(
-      libraryDependencies ++= Karaf.common :+ commonsLang,
-      unmanagedSourceDirectories in Compile ++= Seq(
-        (sourceDirectory in Compile in `sbt-karaf-packaging`).value,
-        (sourceDirectory in Compile in `karaf-mbean-wrapper`).value))
 
   val commonSettings = Seq(
     organization in ThisBuild := "wav.devtools",
@@ -49,10 +50,13 @@ object OsgiToolingBuild extends Build {
     externalResolvers ++= Seq(
       Resolver.sbtPluginRepo("releases"),
       Resolver.typesafeIvyRepo("releases")),
-    updateOptions := updateOptions.value.withCachedResolution(true),
+    publishLocalConfiguration ~= { conf =>
+      new PublishConfiguration(conf.ivyFile, conf.resolverName, conf.artifacts, conf.checksums, conf.logging, true)
+    },
     publishArtifact in Compile := true,
     publishArtifact in Test := false,
     scalaVersion := "2.10.5",
+    libraryDependencies += scalaTest,
     scalacOptions in ThisBuild ++= Seq(
       "-deprecation", 
       "-feature", 
@@ -72,7 +76,6 @@ object OsgiToolingBuild extends Build {
     scriptedSettings ++
     Seq(
       sbtPlugin := true,
-      unmanagedSources in Compile += (baseDirectory in ThisBuild).value / "project" / "props.scala", // for scripted tests and sbt-karaf
       scriptedLaunchOpts += "-Dproject.version=" + version.value,
       fork in scripted := true) // this may be required for log output
 

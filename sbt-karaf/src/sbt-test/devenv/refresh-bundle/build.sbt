@@ -1,36 +1,23 @@
-import wav.devtools.sbt.karaf.SbtKaraf, SbtKaraf.autoImport._
+import wav.devtools.sbt.karaf.{packaging, SbtKaraf}, SbtKaraf.autoImport._
 import com.typesafe.sbt.osgi.SbtOsgi, SbtOsgi.autoImport._
 import KarafKeys._
 import KarafPackagingKeys._
 
-featuresRequired := Map("log" -> "*")
-
-libraryDependencies ++= Seq(
-    "org.slf4j" % "osgi-over-slf4j" % "1.7.10",
-    FeatureID("org.apache.karaf.features", "standard", "4.0.0"))
-
 enablePlugins(SbtOsgi, SbtKaraf)
-
-osgiSettings
-
-name := "refreshbundle"
-
-organization := "wav.devtools.sbt.karaf.examples"
 
 version := "0.1.0.SNAPSHOT"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 
-libraryDependencies ++= {
-  import wav.devtools.sbt.karaf.Dependencies._
-  Seq(
-    slf4j % "provided",
-    osgiCore % "provided"
-  )
-}
+osgiSettings
 
 OsgiKeys.exportPackage := Seq(organization.value + ".refreshbundle")
 
 OsgiKeys.importPackage := Seq("scala", "scala.*")
 
-updateOptions := updateOptions.value.withCachedResolution(true)
+libraryDependencies ++= Seq(
+	"org.slf4j" % "slf4j-api" % "1.7.10",
+	"org.osgi" % "org.osgi.core" % "5.0.0",
+	FeatureID("org.apache.karaf.features", "standard", "4.0.1"))
+
+logLevel := Level.Warn

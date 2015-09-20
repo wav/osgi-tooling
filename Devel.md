@@ -1,5 +1,7 @@
 ### Testing `sbt-karaf`
 
+Extract the karaf distribution to the karaf.dist folder for testing, then ...
+
 Start a karaf instance locally with defaults (see resources/arquillian.xml) and install a jmx bundle. E.g.
 
 ```shell

@@ -39,6 +39,7 @@ private[packaging] object FeaturesXmlFormats {
     def write(b: Bundle) = {
       Some(setAttrs(<bundle>{b.url}</bundle>, Map(
         "dependency" -> Some(b.dependency.toString),
+        "start" -> Some(b.start.toString),
         "start-level" -> b.`start-level`.map(_.toString)
       )))
     }

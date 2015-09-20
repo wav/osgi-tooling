@@ -1,9 +1,9 @@
 **/.idea/**
 .idea/**
-**/project
-project/userPlugins.sbt*.ignore
+**/project/userPlugins.sbt
 **/*.ignore
 TODO.md
 *.html
 target
 **/target
+karaf/*

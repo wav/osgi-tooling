@@ -1,8 +1,5 @@
-import wav.devtools.sbt.karaf.packaging.SbtKarafPackaging
-import SbtKarafPackaging.autoImport._
+import wav.devtools.sbt.karaf.packaging.SbtKarafPackaging, SbtKarafPackaging.autoImport._
 import KarafPackagingKeys._
-
-enablePlugins(SbtKarafPackaging)
 
 scalaVersion in ThisBuild := "2.11.7"
 
@@ -31,5 +28,3 @@ checkFeaturesXml := {
 		sys.error("Couldn't find features.xml")
 	}
 }
-
-updateOptions := updateOptions.value.withCachedResolution(true)

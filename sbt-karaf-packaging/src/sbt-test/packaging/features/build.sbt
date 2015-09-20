@@ -1,18 +1,17 @@
-import wav.devtools.sbt.karaf.packaging.SbtKarafPackaging
-import SbtKarafPackaging.autoImport._
+import wav.devtools.sbt.karaf.packaging.SbtKarafPackaging, SbtKarafPackaging.autoImport._
 import KarafPackagingKeys._
 
 enablePlugins(SbtKarafPackaging)
 
+version := "0.1.0.SNAPSHOT"
+
 featuresRequired := Map("jolokia" -> "1.3.0", "scr" -> "*")
 
-libraryDependencies ++= {
-  import wav.devtools.sbt.karaf.Dependencies.Karaf
+libraryDependencies ++=
   Seq(
     "org.slf4j" % "osgi-over-slf4j" % "1.7.10",
-    Karaf.standardFeatures,
-    Karaf.paxWebFeatures)
-}
+    FeatureID("org.apache.karaf.features", "standard", "4.0.1"),
+    FeatureID("org.ops4j.pax.web", "pax-web-features", "4.1.4"))
 
 lazy val checkJolokiaIsAvailable = taskKey[Unit]("Tests if the jolokia feature was resolved")
 
@@ -45,7 +44,3 @@ checkFeaturesXml := {
 	if (!(crossTarget.value / "features.xml").exists)
 		sys.error("Couldn't find features.xml")
 }
-
-version := "0.1.0.SNAPSHOT"
-
-updateOptions := updateOptions.value.withCachedResolution(true)

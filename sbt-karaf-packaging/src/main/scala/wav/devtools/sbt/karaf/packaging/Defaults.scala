@@ -2,8 +2,8 @@ package wav.devtools.sbt.karaf.packaging
 
 import sbt.Keys._
 import sbt._
-import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
-import wav.devtools.sbt.karaf.packaging.model._
+import wav.devtools.sbt.karaf.packaging
+import packaging.model._, FeaturesXml._
 
 object KarafPackagingDefaults {
 
@@ -46,7 +46,7 @@ object KarafPackagingDefaults {
 
   lazy val featuresProjectBundleTask = Def.task {
     val (_, f) = (packagedArtifact in(Compile, packageBin)).value
-    Bundle(f.toURI.toString)
+    Bundle(f.toURI.toString, false, true, None)
   }
 
   lazy val featuresProjectFeatureTask = Def.task {
@@ -55,32 +55,78 @@ object KarafPackagingDefaults {
     val resolved = Resolution.mustResolveFeatures(selected)
     val bundles = Resolution.selectProjectBundles(update.value, resolved) + featuresProjectBundle.value
     feature(name.value, version.value, bundles ++ features)
+      .copy(description = Option(description.value))
   }
 
-  lazy val generateDependsFileTask = Def.task {
-    val f = target.value / "dependencies.properties"
-    val artifacts = for {
-      conf <- update.value.configurations
-      moduleReport <- conf.modules
-      (a, _) <- moduleReport.artifacts
-    } yield {
-        val m = moduleReport.module
-        DependenciesProperties.Artifact(m.organization, a.name, m.revision, conf.configuration, a.`type`)
-      }
-    val fcontent = DependenciesProperties(
-      DependenciesProperties.Project(organization.value, name.value, version.value),
-      artifacts)
-    IO.write(f, fcontent)
-    f
+  lazy val generateDependsFileTask: SbtTask[Seq[File]] = Def.task {
+    if (shouldGenerateDependsFile.value) {
+      val f = (resourceManaged in Compile).value / packaging.model.DependenciesProperties.jarPath
+      val artifacts = for {
+        conf <- update.value.configurations
+        moduleReport <- conf.modules
+        (a, _) <- moduleReport.artifacts
+      } yield {
+          val m = moduleReport.module
+          DependenciesProperties.Artifact(m.organization, a.name, m.revision, conf.configuration, a.`type`)
+        }
+      val fcontent = DependenciesProperties(
+        DependenciesProperties.Project(organization.value, name.value, version.value),
+        artifacts)
+      IO.write(f, fcontent)
+      Seq(f)
+    } else Seq.empty
   }
 
-  lazy val featuresPackagedArtifactsTask: SbtTask[Map[
-    Artifact, File]] = Def.task {
+  lazy val featuresPackagedArtifactsTask: SbtTask[Map[Artifact, File]] = Def.task {
     val pas = packagedArtifacts.value
     featuresFile.value
       .map(f => pas.updated(Artifact(name.value, "xml", "xml", "features"), f))
       .getOrElse(pas)
   }
+
+  lazy val karafSourceDistributionTask: SbtTask[Option[File]] = Def.task {
+    val dist = karafDistribution.value
+    val archive = target.value / dist.artifactName
+    if (archive.exists()) Some(archive)
+    else {
+      // sbt-maven-resolver doesn't like artifacts that are non jar which don't have a classifier. (sbt 0.13.9)
+      // So we bypass it by downloading it manually without using the update report.
+      if (dist.url.getScheme.startsWith("mvn")) {
+        val rs = fullResolvers.value.collect { case r: MavenRepository => r }
+        val mavenLocal = new File(new URI(Resolver.mavenLocal.root))
+        val result = Util.downloadMavenArtifact(dist.url, mavenLocal, rs)
+        result map { f =>
+          IO.copyFile(f, archive)
+          f
+        }
+      } else if (Util.download(dist.url, archive)) Some(archive)
+      else None
+    }
+  }
+
+  lazy val unpackKarafDistributionTask: SbtTask[File] = Def.task {
+    val source = karafDistribution.value
+    val archive = karafSourceDistribution.value.filter(_.exists)
+    require(archive.isDefined, s"An archive is found for $source")
+    val karafDist = target.value / "karaf-dist"
+    Util.unpack(archive.get, karafDist)
+    val contentPath = Option(source.contentPath).filterNot(_.isEmpty).map(karafDist / _)
+    val finalKarafDist = contentPath getOrElse karafDist
+    require(finalKarafDist.isDirectory(), s"$finalKarafDist not found")
+    finalKarafDist
+  }
+
+  val KarafMinimalDistribution =
+    model.KarafDistribution(
+      uri("mvn:org.apache.karaf/apache-karaf-minimal/4.0.1/tar.gz"),
+      "apache-karaf-minimal-4.0.1.tar.gz",
+      "apache-karaf-minimal-4.0.1")
+
+  lazy val karafDistributionSettings: Seq[Setting[_]] =
+    Seq(
+      karafDistribution := KarafMinimalDistribution,
+      karafSourceDistribution := karafSourceDistributionTask.value,
+      unpackKarafDistribution := unpackKarafDistributionTask.value)
 
   lazy val featuresSettings: Seq[Setting[_]] =
       Internal.settings ++
@@ -93,8 +139,9 @@ object KarafPackagingDefaults {
         featuresSelected := featuresSelectedTask.value,
         featuresProjectBundle := featuresProjectBundleTask.value,
         featuresProjectFeature := featuresProjectFeatureTask.value,
-        generateDependsFile := generateDependsFileTask.value,
         packagedArtifacts <<= featuresPackagedArtifactsTask,
-        featuresAddDependencies := false)
+        featuresAddDependencies := false,
+        shouldGenerateDependsFile := false,
+        resourceGenerators in Compile <+= generateDependsFileTask)
 
 }

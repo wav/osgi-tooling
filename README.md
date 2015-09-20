@@ -25,5 +25,7 @@ addSbtPlugin("wav.devtools" % "sbt-karaf-packaging" % version)
 
 plugins.sbt
 ```scala
+addSbtPlugin("wav.devtools" % "sbt-karaf-packaging" % version)
+
 addSbtPlugin("wav.devtools" % "sbt-karaf" % version)
 ```
