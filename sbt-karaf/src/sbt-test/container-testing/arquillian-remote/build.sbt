@@ -1,5 +1,7 @@
-import wav.devtools.sbt.karaf.{KarafKeys, SbtKaraf}, SbtKaraf.autoImport._
+import wav.devtools.sbt.karaf.{packaging, SbtKaraf}, SbtKaraf.autoImport._
 import KarafKeys._
+
+enablePlugins(SbtKaraf)
 
 version := "0.1.0.SNAPSHOT"
 

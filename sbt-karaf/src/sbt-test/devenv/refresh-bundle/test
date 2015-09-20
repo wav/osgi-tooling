@@ -1,6 +1,7 @@
-> karafStartContainer
+> karafStartServer
 > karafRefreshBundle
 > karafRefreshBundle
 > karafResetServer
 > karafRefreshBundle
-> karafStopContainer
+> karafUndeployFeature
+> karafStopServer

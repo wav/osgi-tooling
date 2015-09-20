@@ -6,4 +6,4 @@ TODO.md
 *.html
 target
 **/target
-karaf
+karaf/*

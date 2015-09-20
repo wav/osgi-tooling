@@ -46,7 +46,7 @@ object KarafPackagingDefaults {
 
   lazy val featuresProjectBundleTask = Def.task {
     val (_, f) = (packagedArtifact in(Compile, packageBin)).value
-    Bundle(f.toURI.toString)
+    Bundle(f.toURI.toString, false, true, None)
   }
 
   lazy val featuresProjectFeatureTask = Def.task {
@@ -55,6 +55,7 @@ object KarafPackagingDefaults {
     val resolved = Resolution.mustResolveFeatures(selected)
     val bundles = Resolution.selectProjectBundles(update.value, resolved) + featuresProjectBundle.value
     feature(name.value, version.value, bundles ++ features)
+      .copy(description = Option(description.value))
   }
 
   lazy val generateDependsFileTask: SbtTask[Seq[File]] = Def.task {

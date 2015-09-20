@@ -18,8 +18,9 @@ object KarafDefaults {
   lazy val karafResetServerTask = Def.task(handled(C.value.System(_.rebootCleanAll("now"))))
 
   // TODO: refresh by url
-  lazy val karafRefreshBundleTask = Def.task{
-    val b = Bundle(-1, organization.value + "." + name.value, version.value, BundleState.Active)
+  lazy val karafRefreshBundleTask = Def.task {
+    val (n,v) = karafRefreshBundleName.value
+    val b = Bundle(-1, n, v, BundleState.Active)
     handled(C.value.refreshBundle(b))
   }
 
@@ -64,6 +65,8 @@ object KarafDefaults {
     }
   }
 
+  private lazy val defaultBundleName = Def.setting((organization.value + "." + name.value).replace("-", "."))
+
   lazy val karafSettings: Seq[Setting[_]] =
     Seq(karafContainer := new AtomicReference(None),
        karafStartServer := karafStartServerTask.value,
@@ -73,6 +76,7 @@ object KarafDefaults {
        karafContainerArgs := karafContainerArgsSetting.value,
        karafDeployFeature := karafDeployFeatureTask.value,
        karafUndeployFeature := karafUndeployFeatureTask.value,
+       karafRefreshBundleName := Tuple2(defaultBundleName.value, version.value),
        karafRefreshBundle := karafRefreshBundleTask.value,
        karafRefreshBundle <<= karafRefreshBundle dependsOn (karafDeployFeature))
 
