@@ -1,5 +1,5 @@
 import sbt._
-import Keys._
+import sbt.Keys._
 import sbt.ScriptedPlugin._
 import wav.devtools.sbt.karaf.Dependencies._
 
@@ -13,6 +13,7 @@ object OsgiToolingBuild extends Build {
     .settings(commonSettings: _*)
     .settings(
       libraryDependencies ++= Karaf.common :+ commonsIo :+ commonsLang,
+      parallelExecution in test := false,
       testOptions in Test +=
         Tests.Setup(() => sys.props += "karaf.base" -> ((baseDirectory in ThisBuild).value / "karaf").getAbsolutePath))
 
@@ -55,6 +56,7 @@ object OsgiToolingBuild extends Build {
     publishLocalConfiguration ~= { conf =>
       new PublishConfiguration(conf.ivyFile, conf.resolverName, conf.artifacts, conf.checksums, conf.logging, true)
     },
+    testOptions in Test := Seq(Tests.Filter(s => s.endsWith("Suite"))),
     publishArtifact in Compile := true,
     publishArtifact in Test := false,
     scalaVersion := "2.10.5",

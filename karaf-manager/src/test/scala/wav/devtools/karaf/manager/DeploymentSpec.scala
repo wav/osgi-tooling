@@ -7,7 +7,7 @@ import java.nio.file.{Paths, Files}
 
 import wav.devtools.karaf.mbeans.{BundleState, Bundle}
 
-class DeploymentSuite extends Spec with BeforeAndAfter {
+class DeploymentSpec extends Spec with BeforeAndAfter {
 
   var container: KarafContainer = null
   var client: ExtendedKarafJMXClient = null
@@ -23,11 +23,11 @@ class DeploymentSuite extends Spec with BeforeAndAfter {
     val BUNDLE_NAME = "default.refresh.bundle"
     val FEATURE_NAME = "refresh-bundle"
     val tempDir = Files.createTempDirectory(s"DeploymentSuite_$FEATURE_NAME")
-    val bundleJar = classOf[DeploymentSuite].getResourceAsStream(s"/$FEATURE_NAME.jar")
+    val bundleJar = classOf[DeploymentSpec].getResourceAsStream(s"/$FEATURE_NAME.jar")
     val bundleJarFile = new File(tempDir.toFile, s"$FEATURE_NAME.jar")
     Files.copy(bundleJar, Paths.get(bundleJarFile.toURI))
     val featuresFile = new File(tempDir.toFile, s"$FEATURE_NAME-features.xml")
-    val featuresXml = io.Source.fromInputStream(classOf[DeploymentSuite].getResourceAsStream(s"/$FEATURE_NAME-features.xml"))
+    val featuresXml = io.Source.fromInputStream(classOf[DeploymentSpec].getResourceAsStream(s"/$FEATURE_NAME-features.xml"))
       .getLines.mkString.replace(s"@$FEATURE_NAME@", bundleJarFile.toURI.toString)
     import java.io._
     val pw = new PrintWriter(featuresFile)

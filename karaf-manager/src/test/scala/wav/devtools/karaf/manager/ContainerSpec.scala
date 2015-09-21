@@ -4,7 +4,7 @@ import org.scalatest.Spec
 
 import scala.util.Success
 
-class ContainerSuite extends Spec {
+class ContainerSpec extends Spec {
 
   def `start and stop a karaf container`(): Unit = {
     val container = KarafContainer.Default
