@@ -117,7 +117,7 @@ private[packaging] object Util {
 
   def matchesShasum(source: URI, f: File, sha1: File): Boolean = {
     val actual = calculateSha1(f)
-    val expected = io.Source.fromFile(sha1).getLines.mkString
+    val expected = io.Source.fromFile(sha1).getLines.mkString.split("\b").head
     println(s"""|SHA1: $source
                 |      actual:   $actual
                 |      expected: $expected
