@@ -10,14 +10,20 @@ class FeaturesXmlSuite extends Spec {
 
   import sbt._
 
-  val standardID = "org.apache.karaf.features" % "standard" % "4.0.0" classifier("features")
-  val enterpriseID = "org.apache.karaf.features" % "enterprise" % "4.0.0" classifier("features")
-  val paxWebID = "org.ops4j.pax.web" % "pax-web-features" % "4.1.4" classifier("features")
+  val vKaraf = sys.props("karaf.version")
+  val vPaxWeb = "4.2.0"
+  val vJolokia = "1.3.0"
+  val jolokiaUrl = s"mvn:org.jolokia/jolokia-osgi/$vJolokia"
+  val paxWebUrl = s"mvn:org.ops4j.pax.web/pax-web-features/$vPaxWeb/xml/features"
+
+  val standardID = "org.apache.karaf.features" % "standard" % vKaraf classifier("features")
+  val enterpriseID = "org.apache.karaf.features" % "enterprise" % vKaraf classifier("features")
+  val paxWebID = "org.ops4j.pax.web" % "pax-web-features" % "4.2.0" classifier("features")
 
   val repoIDs = Map[sbt.ModuleID, String](
-    standardID -> s"/standard-4.0.0-features.xml",
-    enterpriseID -> s"/enterprise-4.0.0-features.xml",
-    paxWebID -> "/pax-web-features-4.1.4-features.xml"
+    standardID -> s"/standard-$vKaraf-features.xml",
+    enterpriseID -> s"/enterprise-$vKaraf-features.xml",
+    paxWebID -> "/pax-web-features-4.2.0-features.xml"
   )
 
   def getRepo(m: sbt.ModuleID): Option[FeatureRepository] =
@@ -37,19 +43,19 @@ class FeaturesXmlSuite extends Spec {
       }
     }
 
-  val jolokia13 = Dependency("jolokia","1.3.0",false,false)
+  val jolokia13 = Dependency("jolokia",vJolokia,false,false)
 
   def `should read valid feature files`(): Unit = {
     val Some(fr) = getRepo(standardID)
-    val paxRepo = Repository("mvn:org.ops4j.pax.web/pax-web-features/4.1.4/xml/features")
+    val paxRepo = Repository(paxWebUrl)
     assert(fr.featuresXml.elems.contains(paxRepo))
-    val jolokia = feature("jolokia","1.3.0",Set(Bundle("mvn:org.jolokia/jolokia-osgi/1.3.0"), Dependency("http",None)))
+    val jolokia = feature("jolokia",vJolokia,Set(Bundle(jolokiaUrl), Dependency("http",None)))
     val Some(selection) = fr.featuresXml.elems.collectFirst {
       case f @ Feature(name, _, _, Some(_)) if name == "jolokia" => f
     }
     assert(jolokia.name == selection.name)
     assert(jolokia.version == selection.version)
-    assert(jolokia.deps.contains(Bundle("mvn:org.jolokia/jolokia-osgi/1.3.0")))
+    assert(jolokia.deps.contains(Bundle(jolokiaUrl)))
     assert(jolokia.deps.contains(Dependency("http",None)))
   }
 
@@ -65,7 +71,7 @@ class FeaturesXmlSuite extends Spec {
 
   def `should identify a bundle dependency`(): Unit = {
     val Some(fr) = getRepo(standardID)
-    fr.features.flatMap(_.deps).contains(Bundle("mvn:org.jolokia/jolokia-osgi/1.3.0"))
+    fr.features.flatMap(_.deps).contains(Bundle(jolokiaUrl))
   }
 
   def `parses a maven url`(): Unit = {
@@ -78,8 +84,8 @@ class FeaturesXmlSuite extends Spec {
 
   def `features versions and constraints are comparable`(): Unit = {
     val jolokia13vr = Dependency("jolokia","[1.3,1.4)", false, false)
-    assert(jolokia13 == Dependency("jolokia","1.3.0",false,false))
-    assert(Resolution.satisfies(jolokia13vr, feature("jolokia", "1.3.0")))
+    assert(jolokia13 == Dependency("jolokia",vJolokia,false,false))
+    assert(Resolution.satisfies(jolokia13vr, feature("jolokia", vJolokia)))
     assert(!Resolution.satisfies(jolokia13vr, feature("jolokia", "1.2.0")))
     assert(!Resolution.satisfies(jolokia13vr, feature("jolokia", "1.4.0")))
   }
@@ -96,7 +102,7 @@ class FeaturesXmlSuite extends Spec {
   }
 
   def `can write a valid features descriptor`(): Unit = {
-    val repository = Repository("mvn:org.ops4j.pax.web/pax-web-features/4.1.4/xml/features")
+    val repository = Repository(paxWebUrl)
     val bundle = Bundle("mvn:org.scala-lang/scala-library/2.11.7")
     val config = Config("my.project.cfg", "property=value")
     val configFile = ConfigFile("my.project.bootstrap.cfg", "https://internal.ip/my.project/bootstrap.cfg")

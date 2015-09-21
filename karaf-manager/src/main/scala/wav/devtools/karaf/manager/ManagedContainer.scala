@@ -34,7 +34,7 @@ object KarafContainer {
     val bootDir = new File(new File(karafBase), "lib/boot")
     val classPath = filterFileNames(bootDir)(_.endsWith(".jar")).map(new File(bootDir, _))
     Seq(
-       s"-classpath", classPath.mkString(":"),
+       s"-classpath", classPath.mkString(File.pathSeparator),
        s"-Dkaraf.home=$karafBase",
        s"-Dkaraf.base=$karafBase",
        s"-Dkaraf.etc=$karafBase/etc",

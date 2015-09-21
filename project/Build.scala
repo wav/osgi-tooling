@@ -12,7 +12,7 @@ object OsgiToolingBuild extends Build {
   lazy val `karaf-manager` = project
     .settings(commonSettings: _*)
     .settings(
-      libraryDependencies ++= Karaf.common :+ commonsIo,
+      libraryDependencies ++= Karaf.common :+ commonsIo :+ commonsLang,
       testOptions in Test +=
         Tests.Setup(() => sys.props += "karaf.base" -> ((baseDirectory in ThisBuild).value / "karaf").getAbsolutePath))
 
@@ -20,7 +20,7 @@ object OsgiToolingBuild extends Build {
     .settings(commonPluginSettings: _*)
     .settings(
       libraryDependencies ++=
-        features ++
+        features.map(_ % "test") ++
         Seq(
           jarchivelib,
           osgiCore,
@@ -32,13 +32,15 @@ object OsgiToolingBuild extends Build {
           if (cr.configuration == "test")
           mr <- cr.modules
           m = mr.module
-          (a ,f) <- mr.artifacts
+          (a, f) <- mr.artifacts
           expected <- features
           if (expected.organization == m.organization)
           if (expected.name == m.name)
           if (a.extension == "xml")
         } yield f).toSet.toSeq
-      })
+      },
+      testOptions in Test +=
+        Tests.Setup(() => sys.props += "karaf.version" -> Karaf.Version))
 
   lazy val `sbt-karaf` = project
     .dependsOn(`sbt-karaf-packaging`, `karaf-manager`)

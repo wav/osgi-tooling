@@ -30,7 +30,7 @@ object Dependencies {
     // when this is changed, update the the sbt-karaf-packaging tests
     val standardFeatures   = featureID("org.apache.karaf.features", "standard", Version)
     val enterpriseFeatures = featureID("org.apache.karaf.features", "enterprise", Version)
-    val paxWebFeatures     = featureID("org.ops4j.pax.web", "pax-web-features", "4.1.4")
+    val paxWebFeatures     = featureID("org.ops4j.pax.web", "pax-web-features", "4.2.0")
 
     lazy val common = Seq(
       slf4j,

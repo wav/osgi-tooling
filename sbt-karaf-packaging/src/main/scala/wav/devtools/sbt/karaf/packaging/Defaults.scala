@@ -116,11 +116,14 @@ object KarafPackagingDefaults {
     finalKarafDist
   }
 
-  val KarafMinimalDistribution =
+  val KarafMinimalDistribution = {
+    import org.apache.commons.lang3.SystemUtils
+    val ext = if (SystemUtils.IS_OS_WINDOWS) "zip" else "tar.gz"
     model.KarafDistribution(
-      uri("mvn:org.apache.karaf/apache-karaf-minimal/4.0.1/tar.gz"),
-      "apache-karaf-minimal-4.0.1.tar.gz",
+      uri(s"mvn:org.apache.karaf/apache-karaf-minimal/4.0.1/$ext"),
+      s"apache-karaf-minimal-4.0.1.$ext",
       "apache-karaf-minimal-4.0.1")
+  }
 
   lazy val karafDistributionSettings: Seq[Setting[_]] =
     Seq(

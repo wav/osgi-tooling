@@ -133,6 +133,7 @@ private[packaging] object Util {
     if (!target.exists()) {
       // true > false, so .sortBy(!_.isCache) will select cache repos first.
       val result = resolvers.sortBy(!_.isCache)
+        .view
         .map(r => tryDownload(new URL(s"${r.root}$path"), target))
         .headOption
       if (result.isDefined) {
