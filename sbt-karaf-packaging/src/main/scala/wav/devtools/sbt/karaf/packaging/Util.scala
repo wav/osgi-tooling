@@ -3,12 +3,12 @@ package wav.devtools.sbt.karaf.packaging
 import java.io._
 import java.net.{URI, URL}
 import java.security.MessageDigest
-import java.util.Formatter
 import java.util.jar.{JarInputStream, Manifest => JManifest}
 import javax.xml.transform.stream.{StreamResult, StreamSource}
 import javax.xml.transform.{OutputKeys, TransformerFactory}
 import javax.xml.validation.SchemaFactory
 import org.apache.karaf.util.maven.Parser.pathFromMaven
+import org.apache.commons.io.FileUtils
 
 import org.apache.commons.lang3.text.StrSubstitutor
 import org.rauschig.jarchivelib._
@@ -104,9 +104,9 @@ private[packaging] object Util {
       val targetSha1 = new File(target.getParentFile, target.getName + ".sha1")
       val sourceSha1 = new URL(source.toString + ".sha1")
       val temp = new File(dir, target.getName)
-      val downloaded = Try(IO.download(source, temp)).isSuccess
+      val downloaded = Try(FileUtils.copyURLToFile(source, temp)).isSuccess
       val tempSha1 = new File(dir, target.getName + ".sha1")
-      def downloadedSha1 = Try(IO.download(sourceSha1, tempSha1)).isSuccess
+      val downloadedSha1 = Try(FileUtils.copyURLToFile(sourceSha1, tempSha1)).isSuccess
       if (!downloaded) false
       else if (!downloadedSha1 || matchesShasum(source.toURI, temp, tempSha1)) {
         IO.copyFile(temp, target)
@@ -117,7 +117,7 @@ private[packaging] object Util {
 
   def matchesShasum(source: URI, f: File, sha1: File): Boolean = {
     val actual = calculateSha1(f)
-    val expected = io.Source.fromFile(sha1).getLines.mkString.split("\b").head
+    val expected = io.Source.fromFile(sha1).getLines.mkString.split("\\b").head
     println(s"""|SHA1: $source
                 |      actual:   $actual
                 |      expected: $expected
@@ -135,6 +135,7 @@ private[packaging] object Util {
       val result = resolvers.sortBy(!_.isCache)
         .view
         .map(r => tryDownload(new URL(s"${r.root}$path"), target))
+        .filter(identity)
         .headOption
       if (result.isDefined) {
         println(s"Downloaded $source to $target")

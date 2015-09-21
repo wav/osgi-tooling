@@ -26,6 +26,7 @@ object OsgiToolingBuild extends Build {
           jarchivelib,
           osgiCore,
           commonsLang,
+          commonsIo,
           slf4j),
       managedResources in Test <++= Def.task {
         (for {
