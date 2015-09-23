@@ -4,7 +4,7 @@ import java.io.File
 
 import org.scalatest.Spec
 import wav.devtools.sbt.karaf.packaging.{Util => ThisUtil, Resolution}
-import wav.devtools.sbt.karaf.packaging.model._, FeaturesXml._
+import wav.devtools.sbt.karaf.packaging.model._, wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
 
 class FeaturesXmlSuite extends Spec {
 
@@ -100,19 +100,40 @@ class FeaturesXmlSuite extends Spec {
     assert(Set("jolokia", "http", "pax-http", "pax-http-jetty", "pax-jetty") == rs.map(_.name))
     rs.flatMap(_.deps).collect { case Bundle(MavenUrl(url), _, _, _) => url }.foreach(println)
   }
-
-  def `can write a valid features descriptor`(): Unit = {
+  
+  def makeDescriptor = {
     val repository = Repository(paxWebUrl)
     val bundle = Bundle("mvn:org.scala-lang/scala-library/2.11.7")
+    val bundle2 = Bundle("mvn:org.json/json/20140107")
     val config = Config("my.project.cfg", "property=value")
     val configFile = ConfigFile("my.project.bootstrap.cfg", "https://internal.ip/my.project/bootstrap.cfg")
-    val feature = Feature(name = "test-feature", deps = Set(bundle, config, configFile))
-    val descriptor = FeaturesXml("test-project", Seq(repository, feature))
-    val xml = FeaturesXmlFormats.makeFeaturesXml(descriptor)
+    val feature = Feature(name = "test-feature", deps = Set(bundle, bundle2, config, configFile))
+    FeaturesXml("test-project", Seq(repository, feature))
+  }
+
+  def `can write a valid features descriptor`(): Unit = {
+    val xml = FeaturesXmlFormats.makeFeaturesXml(makeDescriptor)
     println(xml)
     IO.withTemporaryFile("descriptor", new File("./target/test-data").getName) { f =>
       ThisUtil.write(f, FeaturesXmlFormats.featuresXsd, xml)
     }
   }
+
+  def `modify a eature`(): Unit = {
+    val f: Feature = makeDescriptor.elems.collectFirst { case f: Feature => f }.get
+    type FeatureMod = PartialFunction[FeatureOption, FeatureOption]
+    type BundleMod = PartialFunction[FeatureOption, Bundle]
+
+    def modBundle(predicate: MavenUrl => Boolean, f: Bundle => Bundle): BundleMod = {
+      case b @ Bundle(MavenUrl(url), _, _, _) if predicate(url) => f(b)
+    }
+
+    val wrapJson = modBundle(url => url.artifactId == "json", b => WrappedBundle(b.url, instructions = Map(
+      "Bundle-SymbolicName" -> "org.json"
+    )))
+
+    f.copy(deps = f.deps.map(wrapJson orElse { case o => o } : FeatureMod))
+  }
+
 
 }
