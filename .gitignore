@@ -8,3 +8,5 @@ target
 **/target
 karaf/*
 apache-karaf-minimal-*
+files.txt
+env.txt
