@@ -59,8 +59,8 @@ private[packaging] object Util {
       case ((name, Some(value))) => Attribute(None, name, Text(value.toString), Null)
     }.fold(Null)((soFar, attr) => soFar append attr))
 
-  def getJarManifest(path: String): JManifest = {
-    val is = new FileInputStream(path)
+  def getJarManifest(f: File): JManifest = {
+    val is = new FileInputStream(f)
     val jar = new JarInputStream(is)
     jar.getManifest
   }

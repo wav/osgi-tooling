@@ -44,10 +44,12 @@ object FeaturesArtifactData {
   def canBeOSGiBundle(artifact: sbt.Artifact): Boolean =
     artifact.extension == "jar" && (artifact.`type` == "jar" || artifact.`type` == "bundle")
 
-  private [packaging] def isValidOSGiBundle(file: File): Boolean =
-    Util.getJarManifest(file.toString)
-      .getMainAttributes
-      .containsKey("Bundle-SymbolicName")
+  private [packaging] def getSymbolicName(file: File): Option[String] =
+    Option(
+      Util.getJarManifest(file)
+        .getMainAttributes
+        .getValue("Bundle-SymbolicName")
+    ).filterNot(_.isEmpty)
 
   private def isValidFeaturesXml(file: File): Boolean =
     if (!file.exists()) false
@@ -68,7 +70,7 @@ case class FeaturesArtifact(module: sbt.ModuleID, artifact: sbt.Artifact, file: 
   import FeaturesArtifactData._
 
   def toBundle: Option[OSGiBundle] =
-    if (downloaded && canBeOSGiBundle(artifact) && isValidOSGiBundle(file.get))
+    if (downloaded && canBeOSGiBundle(artifact) && getSymbolicName(file.get).isDefined)
       Some(new OSGiBundle(module, artifact, file, from))
     else None
 

@@ -35,6 +35,8 @@ object FeaturesXml {
     `start-level`: Option[Int] = None
     ) extends FeatureOption with ConditionalOption
 
+  // Wrapping a bundle doesn't require instructions, if none are provided defaults are set by the runtime.
+  // https://ops4j1.jira.com/wiki/display/paxurl/Wrap+Protocol#WrapProtocol-defaultinstructions
   def WrappedBundle(
     url: String,
     instructions: Map[String, String] = Map.empty,
@@ -42,7 +44,6 @@ object FeaturesXml {
     dependency: Boolean = false,
     start: Boolean = false,
     `start-level`: Option[Int] = None): Bundle = {
-    require(instructions.nonEmpty || instructionsUrl.nonEmpty, "A wrapped bundle must specify instructions")
     val instUrl = if (instructionsUrl.nonEmpty) ("," + instructionsUrl.get) else ""
     val inst = if (instructions.nonEmpty) ("$" + instructions.map(e => e._1 + "=" + e._2).mkString("&")) else ""
     Bundle("wrap:" + url + instUrl + inst, dependency, start, `start-level`)

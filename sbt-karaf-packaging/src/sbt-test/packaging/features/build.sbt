@@ -5,7 +5,7 @@ enablePlugins(SbtKarafPackaging)
 
 version := "0.1.0.SNAPSHOT"
 
-featuresRequired := Map("jolokia" -> "1.3.0", "scr" -> "*")
+featuresRequired := Map("jolokia" -> "1.3.0", "scr" -> "*", "wrap" -> "*")
 
 libraryDependencies ++=
   Seq(

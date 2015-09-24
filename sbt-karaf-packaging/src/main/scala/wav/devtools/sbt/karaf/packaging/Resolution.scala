@@ -54,9 +54,13 @@ private[packaging] object Resolution {
     MavenUrl(m.organization, m.name, m.revision, Some(a.`type`), a.classifier)
 
   private val bundleTypes = Set("bundle", "jar")
-  def toBundle(m: ModuleID, a: Artifact): Bundle = {
+  def toBundle(m: ModuleID, a: Artifact, f: File): Bundle = {
     val t = Some(a.`type`).filterNot(bundleTypes.contains)
-    Bundle(MavenUrl(m.organization, m.name, m.revision, t, a.classifier).toString)
+    val b = Bundle(MavenUrl(m.organization, m.name, m.revision, t, a.classifier).toString)
+    FeaturesArtifactData.getSymbolicName(f) match {
+      case Some(_) => b
+      case None => WrappedBundle(b.url)
+    }
   }
   
   def toBundleID(url: MavenUrl): ModuleID =
@@ -84,9 +88,9 @@ private[packaging] object Resolution {
     (for {
         mr <- cr.modules
         m = mr.module
-        (a, _) <- mr.artifacts
+        (a, f) <- mr.artifacts
         if (!inFeatures.contains((m,a)))
-      } yield toBundle(m,a)).toSet
+      } yield toBundle(m,a,f)).toSet
   }
 
   def satisfies(constraint: Dependency, feature: Feature): Boolean =
