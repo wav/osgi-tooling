@@ -41,7 +41,7 @@ object FeaturesXml {
     url: String,
     instructions: Map[String, String] = Map.empty,
     instructionsUrl: Option[String] = None,
-    dependency: Boolean = false,
+    dependency: Boolean = true,
     start: Boolean = false,
     `start-level`: Option[Int] = None): Bundle = {
     val instUrl = if (instructionsUrl.nonEmpty) ("," + instructionsUrl.get) else ""
