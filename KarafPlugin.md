@@ -29,7 +29,7 @@ Karaf must be running and accepting connections to it's RMI registry. The endpoi
 
 ```bash
 sbt> show karafContainerArgs # shows karaf defaults if not changed.
-sbt> karafRefreshBundle
+sbt> karafUpdateBundle
 sbt> undeployProjectFeature
 ```
 

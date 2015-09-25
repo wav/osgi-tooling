@@ -12,8 +12,8 @@ object KarafKeys {
   lazy val karafResetServer       = taskKey[Unit]("Restart the server and clean data and caches")
   lazy val karafStatus            = taskKey[Unit]("Relevant status information")
   lazy val karafContainerArgs     = settingKey[ContainerArgs]("The remote Karaf container to connect to.")
-  lazy val karafRefreshBundle     = taskKey[Unit]("Refresh the project's bundle")
-  lazy val karafRefreshBundleName = settingKey[(String,String)]("(SymbolicName,Version)")
+  lazy val karafUpdateBundle      = taskKey[Unit]("Update the project's bundle")
+  lazy val karafUpdateBundleName  = settingKey[(String,String)]("(SymbolicName,Version)")
   lazy val karafDeployFeature     = taskKey[Unit]("Deploy the project's features.xml to the configured karaf container")
   lazy val karafUndeployFeature   = taskKey[Unit]("Undeploy the project's features.xml in the configured karaf container")
 

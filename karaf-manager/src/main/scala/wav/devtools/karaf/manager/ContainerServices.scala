@@ -39,14 +39,14 @@ class ExtendedKarafJMXClient(val args: ContainerArgs) extends KarafJMXClient {
       if (!s.repoRemove(repo.toString)) sys.error("Couldn't remove repository, " + repo)
     }
 
-  def refreshBundle(bundle: mbeans.Bundle): Try[Unit] =
+  def updateBundle(bundle: mbeans.Bundle): Try[Unit] =
     Bundles { s =>
       val original = {
         val result = s.bundles.find(_.name == bundle.name)
         if (result.isEmpty) sys.error("Couldn't find the project bundle, " + bundle.name)
         result.get
       }
-      s.refresh(original.bundleId.toString)
+      s.update(original.bundleId.toString)
       if (bundle.state == BundleState.Active) {
         s.start(original.bundleId.toString)
       }

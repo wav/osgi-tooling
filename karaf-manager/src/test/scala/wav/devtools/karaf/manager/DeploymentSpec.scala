@@ -35,7 +35,7 @@ class DeploymentSpec extends Spec with BeforeAndAfter {
     pw.close
     assert(client.deployFeature(featuresFile.toURI, FEATURE_NAME, BUNDLE_VERSION).isSuccess)
     val bundle = Bundle(-1, BUNDLE_NAME, BUNDLE_VERSION, BundleState.Active)
-    assert(client.refreshBundle(bundle).isSuccess)
+    assert(client.updateBundle(bundle).isSuccess)
     assert(client.undeployFeature(featuresFile.toURI, FEATURE_NAME, BUNDLE_VERSION).isSuccess)
   }
 

@@ -1,7 +1,3 @@
-## Status
-
-Mostly working, reliably refreshing is bundles incomplete. The server must be reset.
-
 ## Usage
 
 Inspect `./sbtDebug` to see how to start the sbt prompt.
@@ -10,14 +6,14 @@ This project serves as a test for the following workflow:
 
 - Starting a managed karaf server. `karafStartServer`
 > HINT: You can login to the instance that is managed by sbt in the folder `target/karaf-dist/KARAF_DIST/bin/client`
-- Deploying a bundle to a karaf container. `karafRefreshBundle`
-- Refresh that bundle when changes are made. `~ karafRefreshBundle`
+- Deploying a bundle to a karaf container. `karafUpdateBundle`
+- Refresh that bundle when changes are made. `~ karafUpdateBundle`
 - Undeploy the feature. `karafUndeployFeature`
 - Reset the karaf server when everything is falling to pieces. `karafResetServer` 
 
 ## User Experience
 
-When using the `karafRefreshBundle` task, you should see the **karaf shell** update like so:
+When using the `karafUpdateBundle` task, you should see the **karaf shell** update like so:
 
 ```bash
 karaf@root()> bundle:list
