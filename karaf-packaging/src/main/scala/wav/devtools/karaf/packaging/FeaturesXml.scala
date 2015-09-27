@@ -47,6 +47,8 @@ object FeaturesXml {
     Bundle("wrap:" + url + instUrl + inst, dependency, start, `start-level`)
   }
 
+  val WrappedBundlePattern = "wrap:([a-z]+:[[^,$$].]*)(,[a-z]+:[[^$$].]*)?([$$].*)?".r
+
   implicit def string2someVersionRange(version: String): Option[VersionRange] =
     Some(new VersionRange(version))
 

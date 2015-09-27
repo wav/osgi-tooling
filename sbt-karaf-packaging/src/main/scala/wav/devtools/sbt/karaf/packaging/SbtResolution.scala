@@ -6,6 +6,8 @@ import wav.devtools.karaf.packaging._, FeaturesXml._
 
 private[packaging] object SbtResolution {
 
+  val WRAP_BUNDLE_INSTRUCTIONS = "wrap_bundle_instructions"
+
   val featuresArtifactFilter = artifactFilter(name = "*", `type` = "xml", extension = "xml", classifier = "features")
 
   val bundleArtifactFilter = artifactFilter(name = "*", `type` = "jar" | "bundle", extension = "*", classifier = "*")
@@ -43,10 +45,16 @@ private[packaging] object SbtResolution {
   private val bundleTypes = Set("bundle", "jar")
   def toBundle(m: ModuleID, a: Artifact, f: File): Bundle = {
     val t = Some(a.`type`).filterNot(bundleTypes.contains)
-    val b = Bundle(MavenUrl(m.organization, m.name, m.revision, t, a.classifier).toString)
+    val b =
+      if (a.url.isEmpty) Bundle(MavenUrl(m.organization, m.name, m.revision, t, a.classifier).toString)
+      else Bundle(a.url.get.toString)
     ArtifactUtil.getSymbolicName(f) match {
       case Some(_) => b
-      case None => WrappedBundle(b.url)
+      case None if !b.url.startsWith("wrap:") => {
+        var url = b.url
+        m.extraAttributes.get(WRAP_BUNDLE_INSTRUCTIONS).foreach(url += _)
+        WrappedBundle(url)
+      }
     }
   }
   

@@ -15,4 +15,6 @@ package object packaging {
       if (t._2 == "*") Version.emptyVersion.toString() else t._2
     })
 
+  private[devtools] def nullToEmpty(s: String): String = if (s == null) "" else s
+
 }

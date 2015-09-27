@@ -22,7 +22,10 @@ OsgiKeys.importPackage := Seq("scala", "scala.*", "org.json", "org.slf4j", "org.
 OsgiKeys.bundleActivator := Option("wav.devtools.sbt.karaf.examples.refreshbundle.Activator")
 
 libraryDependencies ++= Seq(
-	"org.json" % "json" % "20140107", // This is not a bundle. It's been added to test the wrap protocol
+	"org.json" % "json" % "20140107" toWrappedBundle(Map(
+		"Bundle-SymbolicName" -> "json",
+		"Bundle-Version" -> "20140107"
+	)),
 	"org.slf4j" % "slf4j-api" % "1.7.12",
 	"org.slf4j" % "osgi-over-slf4j" % "1.7.12",
 	"org.osgi" % "org.osgi.core" % "6.0.0",

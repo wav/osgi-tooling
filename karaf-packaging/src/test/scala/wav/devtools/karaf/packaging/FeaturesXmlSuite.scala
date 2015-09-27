@@ -119,5 +119,18 @@ class FeaturesXmlSuite extends Spec {
     f.copy(deps = f.deps.map(wrapJson orElse { case o => o } : FeatureMod))
   }
 
+  def `parses a pax wrap url`(): Unit = {
+    val P = FeaturesXml.WrappedBundlePattern
+    val inst = "$Bundle-SymbolicName=test"
+    val bnd = ",http://test.bnd"
+    val P(url1, bnd1, inst1) = "wrap:file:///test.file"
+    assert(bnd1 == null && inst1 == null)
+    val P(url2, bnd2, inst2) = s"wrap:file:///test.file$bnd"
+    assert(bnd2 == bnd && inst2 == null)
+    val P(url3, bnd3, inst3) = s"wrap:file:///test.file$inst"
+    assert(bnd3 == null && inst3 == inst)
+    val P(url4, bnd4, inst4) = s"wrap:file:///test.file$bnd$inst"
+    assert(bnd4 == bnd && inst4 == inst)
+  }
 
 }
