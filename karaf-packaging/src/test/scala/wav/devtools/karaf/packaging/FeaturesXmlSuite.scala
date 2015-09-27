@@ -1,14 +1,12 @@
-package wav.devtools.sbt.karaf.packaging.model
+package wav.devtools.karaf.packaging
 
 import java.io.File
 
+import org.apache.commons.io.FileUtils
 import org.scalatest.Spec
-import wav.devtools.sbt.karaf.packaging.{Util => ThisUtil, Resolution}
-import wav.devtools.sbt.karaf.packaging.model._, wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
+import FeaturesXml._
 
 class FeaturesXmlSuite extends Spec {
-
-  import sbt._
 
   val vKaraf = sys.props("karaf.version")
   val vPaxWeb = "4.2.0"
@@ -16,43 +14,28 @@ class FeaturesXmlSuite extends Spec {
   val jolokiaUrl = s"mvn:org.jolokia/jolokia-osgi/$vJolokia"
   val paxWebUrl = s"mvn:org.ops4j.pax.web/pax-web-features/$vPaxWeb/xml/features"
 
-  val standardID = "org.apache.karaf.features" % "standard" % vKaraf classifier("features")
-  val enterpriseID = "org.apache.karaf.features" % "enterprise" % vKaraf classifier("features")
-  val paxWebID = "org.ops4j.pax.web" % "pax-web-features" % "4.2.0" classifier("features")
-
-  val repoIDs = Map[sbt.ModuleID, String](
-    standardID -> s"/standard-$vKaraf-features.xml",
-    enterpriseID -> s"/enterprise-$vKaraf-features.xml",
-    paxWebID -> "/pax-web-features-4.2.0-features.xml"
+  val repoIDs = Map[String, String](
+    "standard" -> s"/standard-$vKaraf-features.xml",
+    "enterprise" -> s"/enterprise-$vKaraf-features.xml",
+    "pax-web" -> "/pax-web-features-4.2.0-features.xml"
   )
 
-  def getRepo(m: sbt.ModuleID): Option[FeatureRepository] =
-    repoIDs.get(m).map { path =>
-      import sbt.IO
-      val stream = getClass.getResourceAsStream(path)
-      IO.withTemporaryFile("featuresRepository", new File(path).getName) { f =>
-        IO.write(f, IO.readStream(stream))
-        val data = FeaturesArtifact(
-          m,
-          m.explicitArtifacts.head,
-          Some(f),
-          None)
-        val repo = data.toRepository
-        assert(repo.isDefined)
-        repo.get
-      }
+  def getDescriptor(s: String): Option[FeaturesXml] =
+    repoIDs.get(s).flatMap { path =>
+      val xml = io.Source.fromInputStream(getClass.getResourceAsStream(path)).getLines.mkString
+      val f = new File(FileUtils.getTempDirectory, path)
+      FileUtils.writeStringToFile(f, xml)
+      ArtifactUtil.readFeaturesXml(f)
     }
 
   val jolokia13 = Dependency("jolokia",vJolokia,false,false)
 
   def `should read valid feature files`(): Unit = {
-    val Some(fr) = getRepo(standardID)
+    val Some(d) = getDescriptor("standard")
     val paxRepo = Repository(paxWebUrl)
-    assert(fr.featuresXml.elems.contains(paxRepo))
+    assert(d.elems.contains(paxRepo))
     val jolokia = feature("jolokia",vJolokia,Set(Bundle(jolokiaUrl), Dependency("http",None)))
-    val Some(selection) = fr.featuresXml.elems.collectFirst {
-      case f @ Feature(name, _, _, Some(_)) if name == "jolokia" => f
-    }
+    val Some(selection) = d.features.find(_.name == "jolokia")
     assert(jolokia.name == selection.name)
     assert(jolokia.version == selection.version)
     assert(jolokia.deps.contains(Bundle(jolokiaUrl)))
@@ -60,17 +43,17 @@ class FeaturesXmlSuite extends Spec {
   }
 
   def `should identify feature that is defined but not referenced`(): Unit = {
-    val Some(fr) = getRepo(standardID)
-    fr.features.exists(Resolution.satisfies(jolokia13, _))
+    val Some(d) = getDescriptor("standard")
+    d.features.exists(Resolution.satisfies(jolokia13, _))
   }
 
   def `should identify a feature dependency that is not defined but referenced`(): Unit = {
-    val Some(fr) = getRepo(standardID)
+    val Some(fr) = getDescriptor("standard")
     fr.features.exists(Resolution.satisfies(Dependency("pax-http"), _))
   }
 
   def `should identify a bundle dependency`(): Unit = {
-    val Some(fr) = getRepo(standardID)
+    val Some(fr) = getDescriptor("standard")
     fr.features.flatMap(_.deps).contains(Bundle(jolokiaUrl))
   }
 
@@ -91,10 +74,10 @@ class FeaturesXmlSuite extends Spec {
   }
 
   def `finds all transitive features and bundles`(): Unit = {
-    val complete = repoIDs.keys.flatMap(getRepo).toSet
-    val jolokiaDeps = Resolution.selectFeatureDeps(jolokia13, complete.flatMap(_.features))
+    val repositories = repoIDs.keys.flatMap(getDescriptor).toSet
+    val jolokiaDeps = Resolution.selectFeatureDeps(jolokia13, repositories.flatMap(_.features))
     assert(Set(Dependency("http",None,false,false)) == jolokiaDeps)
-    val result = Resolution.resolveRequiredFeatures(Set(jolokia13), complete)
+    val result = Resolution.resolveFeatures(Set(jolokia13), repositories.flatMap(_.features))
     assert(result.isRight)
     val Right(rs) = result
     assert(Set("jolokia", "http", "pax-http", "pax-http-jetty", "pax-jetty") == rs.map(_.name))
@@ -114,12 +97,13 @@ class FeaturesXmlSuite extends Spec {
   def `can write a valid features descriptor`(): Unit = {
     val xml = FeaturesXmlFormats.makeFeaturesXml(makeDescriptor)
     println(xml)
-    IO.withTemporaryFile("descriptor", new File("./target/test-data").getName) { f =>
-      ThisUtil.write(f, FeaturesXmlFormats.featuresXsd, xml)
+    Util.withTemporaryDirectory { dir =>
+      val f = new File(dir, "features.xml")
+      Util.write(f, FeaturesXmlFormats.featuresXsd, xml)
     }
   }
 
-  def `modify a eature`(): Unit = {
+  def `modify a feature`(): Unit = {
     val f: Feature = makeDescriptor.elems.collectFirst { case f: Feature => f }.get
     type FeatureMod = PartialFunction[FeatureOption, FeatureOption]
     type BundleMod = PartialFunction[FeatureOption, Bundle]

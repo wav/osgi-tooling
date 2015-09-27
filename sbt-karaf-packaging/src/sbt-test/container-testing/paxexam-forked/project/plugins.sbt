@@ -1,4 +1,8 @@
-addSbtPlugin("wav.devtools" % "sbt-karaf-packaging" % sys.props("project.version"))
+val V = System.getProperty("project.version", "NOT_SET")
+
+libraryDependencies += "wav.devtools" %% "karaf-packaging" % V
+
+addSbtPlugin("wav.devtools" % "sbt-karaf-packaging" % V)
 
 lazy val plugins = (project in file("."))
   .dependsOn(sbtOsgi)

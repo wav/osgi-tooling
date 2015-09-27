@@ -6,50 +6,50 @@ import java.util.HashMap
 import javax.management.remote.{JMXConnector, JMXConnectorFactory, JMXServiceURL}
 import javax.management.{JMX, ObjectInstance, ObjectName}
 import javax.naming.{ServiceUnavailableException, CommunicationException}
-import scala.collection.JavaConversions.asScalaSet
-import scala.util.{Failure, Try}
+import collection.JavaConversions.asScalaSet
+import concurrent.{Await, future}
+import concurrent.duration._
+import util.{Success, Failure, Try}
+import concurrent.ExecutionContext.Implicits.global
 
 object MBeanConnection {
 
-  @throws(classOf[Exception])
-  def apply(creds: ContainerArgs, retries: Int = 0, maxRetries: Int = 10): Try[JMXConnector] =
-    Try {
-      val environment = new HashMap[String, Array[String]]
-      environment.put(JMXConnector.CREDENTIALS, Array[String](creds.user, creds.pass))
-      JMXConnectorFactory.connect(new JMXServiceURL(creds.serviceUrl), environment)
-    }
-      .recoverWith {
-      // retry if the server doesn't appear to be ready.
-      case nobex: NoSuchObjectException if retries <= maxRetries =>
-        Thread.sleep(1000 * retries)
-        println("Karaf service not ready, retrying ...")
-        apply(creds, retries + 1, maxRetries)
-      case ioex: IOException =>
-        ioex.getCause() match {
-          case suex: ServiceUnavailableException if retries <= maxRetries =>
-            Thread.sleep(1000 * retries)
-            println("Karaf server not available, retrying ...")
-            apply(creds, retries + 1, maxRetries)
-          case commex: CommunicationException =>
-            commex.getRootCause() match {
-              case nobex: NoSuchObjectException if retries <= maxRetries =>
-                Thread.sleep(1000 * retries)
-                println("Karaf service not available, retrying ...")
-                apply(creds, retries + 1, maxRetries)
-              case _ => Failure(ioex)
-            }
-          case _ => Failure(ioex)
-        }
-    }
+  val POLL_INTERVAL = 500.millis
+
+  val DEFAULT_WAIT = 10.seconds
 
   @throws(classOf[Exception])
-  def get[T](connector: JMXConnector, query: String, clazz: Class[T], retries: Int = 0): Try[T] =
-    Try[T] {
-      val mbsc = connector.getMBeanServerConnection
-      val names: Set[ObjectInstance] = mbsc.queryMBeans(new ObjectName(query), null).toSet
-      require(names.toSeq.length > 0, s"MBean not found, query: $query")
-      JMX.newMBeanProxy(mbsc, names.toSeq(0).getObjectName, clazz, true)
+  def tryConnect(creds: ContainerArgs, atMost: FiniteDuration = MBeanConnection.DEFAULT_WAIT): Try[JMXConnector] = {
+    val environment = new HashMap[String, Array[String]]
+    environment.put(JMXConnector.CREDENTIALS, Array[String](creds.user, creds.pass))
+    val f = future {
+      var result: Try[JMXConnector] = Failure(new ServiceUnavailableException(s"Could not connect to ${creds.serviceUrl}"))
+      while(result.isFailure) {
+        result = Try(JMXConnectorFactory.connect(new JMXServiceURL(creds.serviceUrl), environment))
+        if (result.isFailure) Thread.sleep(POLL_INTERVAL.toMillis)
+      }
+      result
     }
+    Await.result(f,atMost)
+  }
+
+  @throws(classOf[Exception])
+  def tryGet[T](connector: JMXConnector, query: String, clazz: Class[T], atMost: FiniteDuration): Try[T] = {
+    val f = future {
+      var result: Try[T] = Failure(new NoSuchObjectException(s"${clazz.getName} not found, query: $query"))
+      while(result.isFailure) {
+        try {
+          val mbsc = connector.getMBeanServerConnection
+          val names: Set[ObjectInstance] = mbsc.queryMBeans(new ObjectName(query), null).toSet
+          if (names.toSeq.length > 0)
+            result = Success(JMX.newMBeanProxy(mbsc, names.toSeq(0).getObjectName, clazz, true))
+        }
+        if (result.isFailure) Thread.sleep(POLL_INTERVAL.toMillis)
+      }
+      result
+    }
+    Await.result(f,atMost)
+  }
 
 }
 
@@ -59,13 +59,21 @@ class MBeanService[T](val mbeanQuery: String, val clazz: Class[T]) {
 }
 
 class MBeanInvoker[T](s: MBeanService[T], connector: () => Try[JMXConnector]) {
-  def apply[R](f: T => R): Try[R] =
+
+  private def closeThenFail[T](c: JMXConnector): PartialFunction[Throwable, Try[T]] =
+    { case t: Throwable => c.close(); Failure(t)}
+
+  def apply[R](f: T => R, atMost: FiniteDuration = MBeanConnection.DEFAULT_WAIT): Try[R] =
     for {
       c <- connector()
-      mbean <- MBeanConnection.get[T](c, s.mbeanQuery, s.clazz)
-      result = f(mbean)
+      _ = require(c != null, "Connection established")
+      mbean <- MBeanConnection.tryGet[T](c, s.mbeanQuery, s.clazz, atMost)
+        .recoverWith(closeThenFail(c))
+      result <- Try(f(mbean))
+        .recoverWith(closeThenFail(c))
       _ = c.close()
     } yield result
+
 }
 
 case class Bundle(bundleId: Int, name: String, version: String, state: BundleState.Value)

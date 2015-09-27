@@ -1,9 +1,14 @@
+update
+test:update
+compile
+publish-local
+karaf-packaging/test
+karaf-manager/test
 sbt-karaf-packaging/test
 sbt-karaf-packaging/scripted packaging/features
 sbt-karaf-packaging/scripted packaging/add-library-dependencies
 sbt-karaf-packaging/scripted packaging/multiple-project-features
 sbt-karaf-packaging/scripted container-testing/paxexam-forked
 sbt-karaf/test
-karaf-manager/test
 sbt-karaf/scripted devenv/refresh-bundle
 sbt-karaf/scripted container-testing/arquillian-managed

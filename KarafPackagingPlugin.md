@@ -54,7 +54,7 @@ A features file like the following will be generated:
 ### Modifying the features file
 
 ```scala
-import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
+import FeaturesXml._
 
 lazy val projectA = project.in(file("A"))
     .enablePlugins(SbtKarafPackaging)

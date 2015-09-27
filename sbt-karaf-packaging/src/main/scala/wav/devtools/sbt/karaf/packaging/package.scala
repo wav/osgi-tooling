@@ -2,7 +2,8 @@ package wav.devtools.sbt.karaf
 
 import org.osgi.framework.Version
 import sbt._
-import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
+import wav.devtools.karaf.packaging.FeaturesXml
+import FeaturesXml._
 
 package object packaging {
 

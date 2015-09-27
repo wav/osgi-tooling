@@ -7,7 +7,7 @@ import org.apache.ivy.core.resolve.DownloadOptions
 import org.apache.ivy.plugins.resolver.DependencyResolver
 import sbt._
 import sbt.mavenint.MavenRepositoryResolver
-import wav.devtools.sbt.karaf.packaging.model.MavenUrl
+import wav.devtools.karaf.packaging.MavenUrl
 
 import scala.collection.JavaConversions._
 

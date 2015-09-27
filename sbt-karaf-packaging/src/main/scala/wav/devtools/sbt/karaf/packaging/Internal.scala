@@ -2,8 +2,8 @@ package wav.devtools.sbt.karaf.packaging
 
 import sbt.Keys._
 import sbt._
+import wav.devtools.karaf.packaging.{MavenUrl, Resolution}
 import wav.devtools.sbt.karaf.packaging.KarafPackagingKeys._
-import wav.devtools.sbt.karaf.packaging.model.{MavenUrl, FeatureRepository}
 
 private [packaging] object Internal {
 
@@ -14,9 +14,9 @@ private [packaging] object Internal {
       if (shouldAdd) {
         val constraints = extracted.get(featuresRequired).map(toDep).toSet
         val (_, repos) = extracted.runTask(downloadAllFeatureRepositories, state)
-        val result = Resolution.resolveRequiredFeatures(constraints, repos)
+        val result = Resolution.resolveFeatures(constraints, repos.flatMap(_.featuresXml.features))
         val resolved = Resolution.mustResolveFeatures(result)
-        val newDependencies = Resolution.toLibraryDependencies(resolved)
+        val newDependencies = SbtResolution.toLibraryDependencies(resolved)
         extracted.append(Seq(
           libraryDependencies ++= newDependencies,
           featuresAddDependencies := false
@@ -30,7 +30,7 @@ private [packaging] object Internal {
     val logger = streams.value.log
     val download = (url: MavenUrl) => Ivy.
       downloadMavenArtifact(url, externalResolvers.value, ivySbt.value, logger, updateOptions.value)
-    val resolve = (m: ModuleID) => Resolution.downloadFeaturesRepository(logger, download, m)
+    val resolve = (m: ModuleID) => SbtResolution.downloadFeaturesRepository(logger, download, m)
     val results = libraryDependencies.value.map(resolve)
     val failures = results.collect { case Left(e) => e }
     failures.foreach(logger.error(_))

@@ -7,27 +7,19 @@ object OsgiToolingBuild extends Build {
 
   lazy val `osgi-tooling` = project.in(file("."))
     .settings(Seq(publishArtifact := false))
-    .aggregate(`karaf-manager`, `sbt-karaf`, `sbt-karaf-packaging`)
+    .aggregate(`karaf-packaging`, `karaf-manager`, `sbt-karaf`, `sbt-karaf-packaging`)
 
-  lazy val `karaf-manager` = project
+  lazy val `karaf-packaging` = project
     .settings(commonSettings: _*)
     .settings(
-      libraryDependencies ++= Karaf.common :+ commonsIo :+ commonsLang,
-      parallelExecution in test := false,
-      testOptions in Test +=
-        Tests.Setup(() => sys.props += "karaf.base" -> ((baseDirectory in ThisBuild).value / "karaf").getAbsolutePath))
-
-  lazy val `sbt-karaf-packaging` = project
-    .settings(commonPluginSettings: _*)
-    .settings(
-      libraryDependencies ++=
-        features.map(_ % "test") ++
-        Seq(
-          jarchivelib,
-          osgiCore,
-          commonsLang,
-          commonsIo,
-          slf4j),
+      libraryDependencies ++= Seq(
+        Karaf.profile,
+        jarchivelib,
+        osgiCore,
+        commonsLang,
+        commonsIo,
+        slf4j),
+      libraryDependencies ++= Karaf.testFeatures,
       managedResources in Test <++= Def.task {
         (for {
           cr <- (update in Test).value.configurations
@@ -35,7 +27,7 @@ object OsgiToolingBuild extends Build {
           mr <- cr.modules
           m = mr.module
           (a, f) <- mr.artifacts
-          expected <- features
+          expected <- Karaf.testFeatures
           if (expected.organization == m.organization)
           if (expected.name == m.name)
           if (a.extension == "xml")
@@ -44,6 +36,19 @@ object OsgiToolingBuild extends Build {
       testOptions in Test +=
         Tests.Setup(() => sys.props += "karaf.version" -> Karaf.Version))
 
+  lazy val `karaf-manager` = project
+    .dependsOn(`karaf-packaging`)
+    .settings(commonSettings: _*)
+    .settings(
+      libraryDependencies ++= Karaf.jmxDependencies,
+      parallelExecution in test := false,
+      testOptions in Test +=
+        Tests.Setup(() => sys.props += "karaf.base" -> ((baseDirectory in ThisBuild).value / "karaf").getAbsolutePath))
+
+  lazy val `sbt-karaf-packaging` = project
+    .dependsOn(`karaf-packaging`)
+    .settings(commonPluginSettings: _*)
+
   lazy val `sbt-karaf` = project
     .dependsOn(`sbt-karaf-packaging`, `karaf-manager`)
     .settings(commonPluginSettings: _*)
@@ -51,9 +56,6 @@ object OsgiToolingBuild extends Build {
   val commonSettings = Seq(
     organization in ThisBuild := "wav.devtools",
     version := "0.1.0.SNAPSHOT",
-    externalResolvers ++= Seq(
-      Resolver.sbtPluginRepo("releases"),
-      Resolver.typesafeIvyRepo("releases")),
     publishLocalConfiguration ~= { conf =>
       new PublishConfiguration(conf.ivyFile, conf.resolverName, conf.artifacts, conf.checksums, conf.logging, true)
     },
@@ -83,10 +85,5 @@ object OsgiToolingBuild extends Build {
       sbtPlugin := true,
       scriptedLaunchOpts += "-Dproject.version=" + version.value,
       fork in scripted := true) // this may be required for log output
-
-  val features = Seq(
-    Karaf.standardFeatures,
-    Karaf.enterpriseFeatures,
-    Karaf.paxWebFeatures)
 
 }

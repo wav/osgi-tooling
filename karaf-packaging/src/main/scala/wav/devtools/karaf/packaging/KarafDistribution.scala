@@ -1,6 +1,6 @@
-package wav.devtools.sbt.karaf.packaging.model
+package wav.devtools.karaf.packaging
 
-import sbt._
+import java.net.URI
 
 case class KarafDistribution(url: URI, artifactName: String, contentPath: String) {
   override def toString(): String =

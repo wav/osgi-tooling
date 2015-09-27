@@ -1,4 +1,4 @@
-package wav.devtools.sbt.karaf.packaging.model
+package wav.devtools.sbt.karaf.packaging
 
 private [packaging] object DependenciesProperties {
 

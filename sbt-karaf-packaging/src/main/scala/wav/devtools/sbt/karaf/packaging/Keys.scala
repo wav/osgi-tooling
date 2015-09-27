@@ -1,8 +1,8 @@
 package wav.devtools.sbt.karaf.packaging
 
-import sbt._
 import sbt.Keys._
-import wav.devtools.sbt.karaf.packaging.model._
+import sbt._
+import wav.devtools.karaf.packaging.{FeaturesXml, KarafDistribution}
 
 object KarafPackagingKeys {
 

@@ -1,24 +1,24 @@
-package wav.devtools.sbt.karaf.packaging
+package wav.devtools.karaf.packaging
 
-import java.io._
+import java.io.{File, _}
 import java.net.{URI, URL}
+import java.nio.file.{Paths, Files}
 import java.security.MessageDigest
 import java.util.jar.{JarInputStream, Manifest => JManifest}
 import javax.xml.transform.stream.{StreamResult, StreamSource}
 import javax.xml.transform.{OutputKeys, TransformerFactory}
 import javax.xml.validation.SchemaFactory
-import org.apache.karaf.util.maven.Parser.pathFromMaven
-import org.apache.commons.io.FileUtils
 
+import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.text.StrSubstitutor
+import org.apache.karaf.util.maven.Parser.pathFromMaven
 import org.rauschig.jarchivelib._
-import sbt.{IO, MavenRepository}
 
 import scala.collection.JavaConversions._
 import scala.util.Try
 import scala.xml._
 
-private[packaging] object Util {
+private [devtools] object Util {
 
   def injectProperties(filePath: String, properties: Map[String, String]): String =
     StrSubstitutor.replace(io.Source.fromFile(filePath).mkString, properties)
@@ -44,12 +44,12 @@ private[packaging] object Util {
     if (target.exists) target.delete
     source.foreach { t =>
       val (f, props) = t
-      if (f.exists) IO.write(target, injectProperties(f.getCanonicalPath, props))
+      if (f.exists) FileUtils.writeStringToFile(target, injectProperties(f.getCanonicalPath, props))
     }
     if (!target.getParentFile.exists) target.getParentFile.mkdirs
     XML.save(target.getCanonicalPath, elems, "UTF-8", true, null)
     val formatted = formatXml(target.getCanonicalPath)
-    IO.write(target, formatted)
+    FileUtils.writeStringToFile(target, formatted)
     validateXml(target.getCanonicalPath, this.getClass.getClassLoader.getResourceAsStream(xsd))
     target
   }
@@ -99,7 +99,7 @@ private[packaging] object Util {
   }
 
   private def tryDownload(source: URL, target: File): Boolean =
-    IO.withTemporaryDirectory { dir =>
+    withTemporaryDirectory { dir =>
       println(s"Trying $source")
       val targetSha1 = new File(target.getParentFile, target.getName + ".sha1")
       val sourceSha1 = new URL(source.toString + ".sha1")
@@ -109,8 +109,8 @@ private[packaging] object Util {
       val downloadedSha1 = Try(FileUtils.copyURLToFile(sourceSha1, tempSha1)).isSuccess
       if (!downloaded) false
       else if (!downloadedSha1 || matchesShasum(source.toURI, temp, tempSha1)) {
-        IO.copyFile(temp, target)
-        IO.copyFile(tempSha1, targetSha1)
+        FileUtils.copyFile(temp, target)
+        FileUtils.copyFile(tempSha1, targetSha1)
         true
       } else false
     }
@@ -125,7 +125,10 @@ private[packaging] object Util {
     actual == expected
   }
 
-  def downloadMavenArtifact(source: URI, localRepo: File, resolvers: Seq[MavenRepository] = Seq.empty): Option[File] = {
+  case class MavenRepo(name: String, root: String, isCache: Boolean)
+
+  // resolvers: (name, root, isCache)
+  def downloadMavenArtifact(source: URI, localRepo: File, resolvers: Seq[MavenRepo] = Seq.empty): Option[File] = {
     assert(source.getScheme.startsWith("mvn"))
     val path = pathFromMaven(source.toString)
     val target = new File(localRepo, path)
@@ -159,6 +162,21 @@ private[packaging] object Util {
         tryDownload(source.toURL, target)
       case _: String => false
     }
+
+  def withTemporaryDirectory[T](f: File => T): T = {
+    val dir = new File(FileUtils.getTempDirectory, util.Random.alphanumeric.take(8).mkString)
+    try {
+      dir.mkdirs()
+      f(dir)
+    }
+    finally { if (dir.exists()) dir.delete() }
+  }
+
+  def writeResourceToFile(in: InputStream, target: File): Unit =
+    Files.copy(in, Paths.get(target.toURI))
+
+  def writeStringResourceToFile(in: InputStream, target: File, mod: String => String): Unit =
+    FileUtils.writeStringToFile(target, mod(io.Source.fromInputStream(in).getLines.mkString))
 
 }
 

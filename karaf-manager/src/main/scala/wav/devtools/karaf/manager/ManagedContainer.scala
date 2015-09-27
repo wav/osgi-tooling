@@ -3,8 +3,7 @@ package wav.devtools.karaf.manager
 import java.io._
 
 import wav.devtools.karaf.mbeans._
-
-import scala.util.Try
+import concurrent.duration._
 
 object KarafContainer {
 
@@ -18,11 +17,11 @@ object KarafContainer {
     val `karaf.base` = System.getProperty("karaf.base", "NOT_SET")
     assert(`karaf.base` != "NOT_SET", "karaf.base system property not set.")
     assert(new File(`karaf.base`).isDirectory(), `karaf.base` + " not found")
-    val config = KarafContainer.createDefault(`karaf.base`)
+    val config = KarafContainer.createDefaultConfig(`karaf.base`)
     new KarafContainer(config)
   }
 
-  def createDefault(karafHome: String, args: Seq[String] = Seq.empty): Configuration =
+  def createDefaultConfig(karafHome: String, args: Seq[String] = Seq.empty): Configuration =
     Configuration(
        DefaultServiceUrl,
        DefaultContainerArgs,
@@ -42,6 +41,7 @@ object KarafContainer {
        s"-Dkaraf.instances=$karafBase/instances",
        s"-Dkaraf.startLocalConsole=false",
        s"-Dkaraf.startRemoteShell=true",
+       s"-Dkaraf.clean.all=true",
        s"-Djava.io.tmpdir=$karafBase/data/tmp",
        s"-Djava.util.logging.config.file=$karafBase/etc/java.util.logging.properties",
        s"-Djava.endorsed.dirs=$karafBase/lib/endorsed") ++

@@ -18,7 +18,7 @@ lazy val checkDependencyIsWrapped = taskKey[Unit]("Tests to see if the bundle de
 
 checkDependencyIsWrapped := {
   val f = featuresProjectFeature.value
-  import wav.devtools.sbt.karaf.packaging.model.FeaturesXml._
+  import FeaturesXml._
   val found = f.deps.exists {
     case Bundle(url, _, _, _) => url == "wrap:mvn:org.json/json/20140107"
     case _ => false

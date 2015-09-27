@@ -27,15 +27,15 @@ object KarafDefaults {
   lazy val karafDeployFeatureTask = Def.task {
     val ff = featuresFile.value
     require(ff.isDefined, "`featuresFile` must produce a features file")
-    val repo = ff.get.getAbsoluteFile.toURI
-    handled(C.value.deployFeature(repo, name.value, version.value))
+    val repo = ff.get.getAbsoluteFile.toURI.toString
+    handled(C.value.startFeature(repo, name.value, version.value))
   }
 
   lazy val karafUndeployFeatureTask = Def.task {
     val ff = featuresFile.value
     require(ff.isDefined, "`featuresFile` must produce a features file")
-    val repo = ff.get.getAbsoluteFile.toURI
-    handled(C.value.undeployFeature(repo, name.value, version.value))
+    val repo = ff.get.getAbsoluteFile.toURI.toString
+    handled(C.value.Features(_.removeRepository(repo, true)))
   }
 
   private lazy val karafContainer = settingKey[AtomicReference[Option[KarafContainer]]]("The managed karaf container")
@@ -46,7 +46,7 @@ object KarafDefaults {
     val ref = karafContainer.value
     if (ref.get.isEmpty) {
       val karafBase = unpackKarafDistribution.value
-      val config = KarafContainer.createDefault(karafBase.getAbsolutePath)
+      val config = KarafContainer.createDefaultConfig(karafBase.getAbsolutePath)
       log.debug(config.toString)
       val container = new KarafContainer(config)
       container.start()

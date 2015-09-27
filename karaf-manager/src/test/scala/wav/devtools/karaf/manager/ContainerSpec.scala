@@ -16,7 +16,7 @@ class ContainerSpec extends Spec {
         container.start()
         Thread.sleep(1000)
         require(container.isAlive, "inspect container.log")
-        assert(C.System(_.getName) == Success("root"))
+        assert(C.System(_.getName).get == "root")
         println("container started")
       }
       finally
@@ -28,7 +28,7 @@ class ContainerSpec extends Spec {
     println("Starting up the container.")
     getName
     println("Checking that the container cannot be reached")
-    C.System(_.getName)
+    intercept[java.util.concurrent.TimeoutException](C.System(_.getName))
     println("Container cannot be reached! :)")
     println("Starting up the container again.")
     getName

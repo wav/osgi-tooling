@@ -1,4 +1,4 @@
-package wav.devtools.sbt.karaf.packaging.model
+package wav.devtools.karaf.packaging
 
 case class MavenUrl(groupId: String, artifactId: String, version: String, `type`: Option[String] = None, classifer: Option[String] = None) {
 

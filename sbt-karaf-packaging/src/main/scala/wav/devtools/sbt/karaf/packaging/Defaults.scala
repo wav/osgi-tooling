@@ -2,12 +2,14 @@ package wav.devtools.sbt.karaf.packaging
 
 import sbt.Keys._
 import sbt._
+import wav.devtools.karaf.packaging.FeaturesXml._
+import wav.devtools.karaf.packaging.{FeaturesXml, FeaturesXmlFormats, KarafDistribution}
 import wav.devtools.sbt.karaf.packaging
-import packaging.model._, FeaturesXml._
 
 object KarafPackagingDefaults {
 
   import KarafPackagingKeys._
+  import wav.devtools.karaf.packaging.{Resolution, Util}
 
   lazy val featuresXmlTask = Def.task {
     new FeaturesXml(name.value, featuresRepositories.value.toSeq :+ featuresProjectFeature.value)
@@ -23,7 +25,7 @@ object KarafPackagingDefaults {
   private lazy val allFeaturesRepositories   = taskKey[Set[FeatureRepository]]("All resolved features repositories")
 
   private lazy val allFeaturesRepositoriesTask = Def.task {
-    val resolveAll = Resolution.resolveAllFeatureRepositoriesTask.value
+    val resolveAll = SbtResolution.resolveAllFeatureRepositoriesTask.value
     resolveAll(update.value)
   }
 
@@ -32,7 +34,7 @@ object KarafPackagingDefaults {
     val repos = allFeaturesRepositories.value
     for {
       fr <- repos
-      f <- fr.features
+      f <- fr.featuresXml.features
       c <- constraints
       if (Resolution.satisfies(c,f))
     } yield Repository(fr.url)
@@ -41,7 +43,7 @@ object KarafPackagingDefaults {
   lazy val featuresSelectedTask = Def.task {
     val constraints = featuresRequired.value.map(toDep).toSet
     val repos = allFeaturesRepositories.value
-    Resolution.resolveRequiredFeatures(constraints, repos)
+    Resolution.resolveFeatures(constraints, repos.flatMap(_.featuresXml.features))
   }
 
   lazy val featuresProjectBundleTask = Def.task {
@@ -53,14 +55,14 @@ object KarafPackagingDefaults {
     val features = featuresRequired.value.map(toDep)
     val selected = featuresSelected.value
     val resolved = Resolution.mustResolveFeatures(selected)
-    val bundles = Resolution.selectProjectBundles(update.value, resolved) + featuresProjectBundle.value
+    val bundles = SbtResolution.selectProjectBundles(update.value, resolved) + featuresProjectBundle.value
     feature(name.value, version.value, bundles ++ features)
       .copy(description = Option(description.value))
   }
 
   lazy val generateDependsFileTask: SbtTask[Seq[File]] = Def.task {
     if (shouldGenerateDependsFile.value) {
-      val f = (resourceManaged in Compile).value / packaging.model.DependenciesProperties.jarPath
+      val f = (resourceManaged in Compile).value / packaging.DependenciesProperties.jarPath
       val artifacts = for {
         conf <- update.value.configurations
         moduleReport <- conf.modules
@@ -92,7 +94,7 @@ object KarafPackagingDefaults {
       // sbt-maven-resolver doesn't like artifacts that are non jar which don't have a classifier. (sbt 0.13.9)
       // So we bypass it by downloading it manually without using the update report.
       if (dist.url.getScheme.startsWith("mvn")) {
-        val rs = fullResolvers.value.collect { case r: MavenRepository => r }
+        val rs = fullResolvers.value.collect { case mr @ MavenRepository(n,r) => Util.MavenRepo(n,r,mr.isCache) }
         val mavenLocal = new File(new URI(Resolver.mavenLocal.root))
         val result = Util.downloadMavenArtifact(dist.url, mavenLocal, rs)
         result map { f =>
@@ -119,7 +121,7 @@ object KarafPackagingDefaults {
   val KarafMinimalDistribution = {
     import org.apache.commons.lang3.SystemUtils
     val ext = if (SystemUtils.IS_OS_WINDOWS) "zip" else "tar.gz"
-    model.KarafDistribution(
+    KarafDistribution(
       uri(s"mvn:org.apache.karaf/apache-karaf-minimal/4.0.1/$ext"),
       s"apache-karaf-minimal-4.0.1.$ext",
       "apache-karaf-minimal-4.0.1")

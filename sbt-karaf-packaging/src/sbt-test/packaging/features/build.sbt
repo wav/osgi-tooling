@@ -25,7 +25,7 @@ lazy val checkBundleAndFeatureIncluded = taskKey[Unit]("Tests if the jolokia fea
 
 checkBundleAndFeatureIncluded := {
   val deps = featuresProjectFeature.value.deps
-  import wav.devtools.sbt.karaf.packaging.model, model.MavenUrl, model.FeaturesXml._
+  import FeaturesXml._
   val jolokiaResult = deps.collectFirst { case ref @ Dependency("jolokia", _, _, _) => ref }
   if (jolokiaResult.isEmpty)
     sys.error("The jolokia feature was not added to the project feature")

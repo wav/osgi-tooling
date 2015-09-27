@@ -1,10 +1,10 @@
-package wav.devtools.sbt.karaf.packaging.model
+package wav.devtools.karaf.packaging
 
 import org.osgi.framework.{Version, VersionRange}
 
 import scala.xml.Elem
 
-private[packaging] trait XmlFormat[T] {
+trait XmlFormat[T] {
   def write(value: T): Option[Elem]
 
   def read(elem: Elem): Option[T] =
@@ -16,9 +16,9 @@ private[packaging] trait XmlFormat[T] {
 
 }
 
-private[packaging] object FeaturesXmlFormats {
+object FeaturesXmlFormats {
 
-  import wav.devtools.sbt.karaf.packaging.Util.setAttrs
+  import Util.setAttrs
   import FeaturesXml._
 
   private def opt[T](e: Elem, attr: String, conversion: String => T): Option[T] =
@@ -164,7 +164,7 @@ private[packaging] object FeaturesXmlFormats {
   }
 
   val featuresSchemas =
-    Seq("1.2.0", "1.3.0")
+    Seq("1.3.0")
       .map(v => v -> (s"http://karaf.apache.org/xmlns/features/v$v" -> s"org/apache/karaf/features/karaf-features-$v.xsd"))
       .toMap
 

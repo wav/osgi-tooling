@@ -4,12 +4,10 @@ import sbt._
 
 object Dependencies {
 
-  val slf4j          = "org.slf4j" % "slf4j-api" % "1.7.10"
-  val `slf4j-simple` = "org.slf4j" % "slf4j-simple" % "1.7.10"
+  val slf4j          = "org.slf4j" % "slf4j-api" % "1.7.12"
   val commonsLang    = "org.apache.commons" % "commons-lang3" % "3.4"
   val commonsIo      = "commons-io" % "commons-io" % "2.4"
-  val osgiCore       = "org.osgi" % "org.osgi.core" % "5.0.0"
-  val osgiEnterprise = "org.osgi" % "org.osgi.enterprise" % "5.0.0"
+  val osgiCore       = "org.osgi" % "org.osgi.core" % "6.0.0"
   val junit          = "junit" % "junit" % "4.11" % "test"
   val junitInterface = "com.novocode" % "junit-interface" % "0.11" % "test"
   val scalaTest      = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
@@ -20,21 +18,18 @@ object Dependencies {
 
     val Version = "4.0.1"
 
-    val assembly = (("org.apache.karaf" % "apache-karaf" % Version)
-      .artifacts(Artifact("apache-karaf", `type` = "tar.gz", extension = "tar.gz"))
-      .intransitive)
-
-    def featureID(o: String, n: String, v: String, a: Option[String] = None) =
-      ModuleID(o, n, v, isTransitive = false, explicitArtifacts = Seq(Artifact(a getOrElse s"$n", "xml", "xml", "features")))
-
     // when this is changed, update the the sbt-karaf-packaging tests
-    val standardFeatures   = featureID("org.apache.karaf.features", "standard", Version)
-    val enterpriseFeatures = featureID("org.apache.karaf.features", "enterprise", Version)
-    val paxWebFeatures     = featureID("org.ops4j.pax.web", "pax-web-features", "4.2.0")
+    lazy val testFeatures = Seq(
+      featureID("org.apache.karaf.features", "standard", Version),
+      featureID("org.apache.karaf.features", "enterprise", Version),
+      featureID("org.ops4j.pax.web", "pax-web-features", "4.2.0")).map(_ % "test")
 
-    lazy val common = Seq(
-      slf4j,
-      osgiCore,
+    private def featureID(o: String, n: String, v: String, a: Option[String] = None) =
+      ModuleID(o, n, v, isTransitive = false, explicitArtifacts = Seq(Artifact(a getOrElse n, "xml", "xml", "features")))
+
+    val profile = "org.apache.karaf.profile" % "org.apache.karaf.profile.core" % Version
+
+    lazy val jmxDependencies = Seq(
       Karaf.bundle,
       Karaf.config,
       Karaf.features,

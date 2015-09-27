@@ -1,4 +1,4 @@
-package wav.devtools.sbt.karaf.packaging.model
+package wav.devtools.karaf.packaging
 
 import org.osgi.framework.{Version, VersionRange}
 
@@ -20,8 +20,6 @@ object FeaturesXml {
     deps: Set[FeatureOption] = Set.empty,
     description: Option[String] = None
   ) extends FeaturesOption {
-    @deprecated("use toDep", "experimental")
-    def toRef: Dependency = toDep
     def toDep: Dependency =
       Dependency(name, if (version == Version.emptyVersion) None else Some(new VersionRange(version.toString())))
   }
@@ -76,14 +74,6 @@ object FeaturesXml {
     deps: Set[ConditionalOption]
     ) extends FeatureOption
 
-  @deprecated("use Dependency", "experimental")
-  def FeatureRef(name: String, version: Option[VersionRange] = None): Dependency =
-    Dependency(name, version)
-
-  @deprecated("use Dependency", "experimental")
-  def featureRef(name: String, version: String): Dependency =
-    Dependency(name, version)
-
   def feature(name: String, version: String, deps: Set[FeatureOption] = Set.empty): Feature =
     Feature(name, Version.parseVersion(version), deps)
 
@@ -93,4 +83,8 @@ object FeaturesXml {
 
 }
 
-case class FeaturesXml(name: String, elems: Seq[FeaturesXml.FeaturesOption] = Nil)
+case class FeaturesXml(name: String, elems: Seq[FeaturesXml.FeaturesOption] = Nil) {
+  import FeaturesXml._
+  lazy val repositories: Seq[Repository] = elems.collect { case f: Repository => f }
+  lazy val features: Seq[Feature] = elems.collect { case f: Feature => f }
+}
