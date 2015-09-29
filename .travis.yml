@@ -1,7 +1,6 @@
 language: java
 jdk:
   - oraclejdk8
-  - openjdk8
 cache:
   directories:
   - $HOME/.ivy
@@ -9,4 +8,4 @@ cache:
   - $HOME/.sbt
   - bin
 script: 
-  - build/unix.sh
+  - build/unix.sh	
