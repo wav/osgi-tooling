@@ -72,7 +72,7 @@ $SSH docker run --rm --name $CONTAINER_NAME \
     -v $DIR_M2:/root/.m2 \
     -v $DIR_IVY2:/root/.ivy2 \
     -v $DIR_SBT_BOOT:/root/.sbt/boot \
-    $IMAGE_NAME /root/input/build.run
+    $IMAGE_NAME /root/input/build/docker-build.run
 
 if [[ $? -ne 0 ]]; then
     echo The build has failed $DIR_INPUT/. >&2

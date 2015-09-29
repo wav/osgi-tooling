@@ -1,0 +1,12 @@
+language: java
+jdk:
+  - oraclejdk8
+  - openjdk8
+cache:
+	directories:
+	- $HOME/.ivy2
+	- $HOME/.m2
+	- $HOME/.sbt
+	- bin
+script: 
+	- build/unix.sh

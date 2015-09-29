@@ -10,3 +10,5 @@ karaf/*
 apache-karaf-minimal-*
 files.txt
 env.txt
+bin
+karaf.tar.gz
