@@ -13,9 +13,9 @@ install:
   - choco install -y maven
 
 cache:
-  - %USERPROFILE%\.m2
-  - %USERPROFILE%\.ivy2
-  - %USERPROFILE%\.sbt
+  - '%USERPROFILE%\.m2'
+  - '%USERPROFILE%\.ivy2'
+  - '%USERPROFILE%\.sbt'
   - bin
 
 build_script:
