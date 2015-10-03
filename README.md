@@ -8,7 +8,10 @@ This is an experiment, things are very likely to change. Further work on this is
 
 Tested with Karaf 4.0.1 on OS X. Should work on windows.
 
-[![Build Status](https://travis-ci.org/wav/osgi-tooling.svg?branch=master)](https://travis-ci.org/wav/osgi-tooling)
+|         | Status   |
+|---------|:--------:|
+| Unix    | [![Travis](https://travis-ci.org/wav/osgi-tooling.svg?branch=master)](https://travis-ci.org/wav/osgi-tooling) |
+| Windows | [AppVeyor](https://ci.appveyor.com/project/wav/osgi-tooling/history) |
 
 ## [Karaf](https://karaf.apache.org/) plugins for SBT
 
@@ -22,7 +25,7 @@ lazy val plugins = (project in file("."))
   .dependsOn(sbtKarafPackaging)
 
 def sbtKarafPackaging = ProjectRef(
-	uri("git://github.com/wav/osgi-tooling.git#888065ecab60781d8d8ae4b15e9199f17d24908f"),
+	uri("git://github.com/wav/osgi-tooling.git#e390f0b948586e2ea3e6d18b2b44dd5be3669508"),
 	"sbt-karaf-packaging")
 ```
 
@@ -34,6 +37,6 @@ lazy val plugins = (project in file("."))
   .dependsOn(sbtKaraf)
 
 def sbtKaraf = ProjectRef(
-	uri("git://github.com/wav/osgi-tooling.git#888065ecab60781d8d8ae4b15e9199f17d24908f"),
+	uri("git://github.com/wav/osgi-tooling.git#e390f0b948586e2ea3e6d18b2b44dd5be3669508"),
 	"sbt-karaf")
 ```
