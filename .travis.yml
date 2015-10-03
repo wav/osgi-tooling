@@ -3,7 +3,7 @@ jdk:
   - oraclejdk8
 cache:
   directories:
-  - $HOME/.ivy
+  - $HOME/.ivy2
   - $HOME/.m2
   - $HOME/.sbt
   - bin

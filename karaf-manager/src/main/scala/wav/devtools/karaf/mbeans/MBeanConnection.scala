@@ -16,7 +16,7 @@ object MBeanConnection {
 
   val POLL_INTERVAL = 500.millis
 
-  val DEFAULT_WAIT = 10.seconds
+  val DEFAULT_WAIT = 30.seconds
 
   @throws(classOf[Exception])
   def tryConnect(creds: ContainerArgs, atMost: FiniteDuration = MBeanConnection.DEFAULT_WAIT): Try[JMXConnector] = {
