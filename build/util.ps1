@@ -1,4 +1,6 @@
-﻿$OUTDIR="$pwd/.out"
+﻿. .\build\env.ps1
+
+$OUTDIR="$pwd/.out"
 
 mkdir -f "$OUTDIR"
 
