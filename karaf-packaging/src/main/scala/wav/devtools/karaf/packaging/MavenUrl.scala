@@ -2,15 +2,20 @@ package wav.devtools.karaf.packaging
 
 case class MavenUrl(groupId: String, artifactId: String, version: String, `type`: Option[String] = None, classifer: Option[String] = None) {
 
+  import Util._
+
   override def toString: String = {
     val url = s"mvn:$groupId/$artifactId/$version"
-    (`type`, classifer) match {
+    (`type`.nonEmptyString, classifer.nonEmptyString) match {
       case (Some(t), Some(c)) => s"$url/$t/$c"
       case (Some(t), None) => s"$url/$t"
       case (None, Some(c)) => s"$url//$c"
       case _ => url
     }
   }
+
+  def toMavenUrl: MavenUrl =
+    MavenUrl.unapply(toString).get
 
 }
 

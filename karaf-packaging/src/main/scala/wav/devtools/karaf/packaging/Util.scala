@@ -178,6 +178,11 @@ private [devtools] object Util {
   def writeStringResourceToFile(in: InputStream, target: File, mod: String => String): Unit =
     FileUtils.writeStringToFile(target, mod(io.Source.fromInputStream(in).getLines.mkString))
 
+  implicit class StringOption(o: Option[String]) {
+    def nonEmptyString: Option[String] =
+      o.filterNot(_.trim.isEmpty)
+  }
+
 }
 
 

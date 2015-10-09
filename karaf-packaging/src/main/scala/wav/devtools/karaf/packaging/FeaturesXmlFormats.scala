@@ -37,7 +37,8 @@ object FeaturesXmlFormats {
 
   object bundleFormat extends XmlFormat[Bundle] {
     def write(b: Bundle) = {
-      Some(setAttrs(<bundle>{b.url}</bundle>, Map(
+      val url = MavenUrl.unapply(b.url).getOrElse(b.url)
+      Some(setAttrs(<bundle>{url}</bundle>, Map(
         "dependency" -> Some(b.dependency.toString),
         "start" -> Some(b.start.toString),
         "start-level" -> b.`start-level`.map(_.toString)

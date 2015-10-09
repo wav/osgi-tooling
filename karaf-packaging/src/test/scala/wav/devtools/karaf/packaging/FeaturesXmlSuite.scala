@@ -63,6 +63,10 @@ class FeaturesXmlSuite extends Spec {
     assert(mvnUrl.toString == result.toString)
     assert(mvnUrl.classifer == result.classifer)
     assert(mvnUrl == result)
+    val mvnUrl2 = MavenUrl("a", "b", "c", Some(""), Some("")).toMavenUrl
+    assert(mvnUrl2.classifer.isEmpty)
+    assert(mvnUrl2.`type`.isEmpty)
+    assert(!mvnUrl2.toString.endsWith("/"))
   }
 
   def `features versions and constraints are comparable`(): Unit = {
