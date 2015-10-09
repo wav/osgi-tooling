@@ -32,7 +32,7 @@ checkBundleAndFeatureIncluded := {
   val logger = streams.value.log
   logger.info(deps.toString)
   val slf4jResult = deps
-    .collect { case Bundle(MavenUrl(url), _, _, _) => url }
+    .collect { case Bundle(MavenUrl(url), _, _, _, _) => url }
     .collectFirst { case MavenUrl("org.slf4j", "osgi-over-slf4j", "1.7.10", None, None) => true }
   if (slf4jResult.isEmpty) 
     sys.error("The slf4j bundle was not added to the project feature")

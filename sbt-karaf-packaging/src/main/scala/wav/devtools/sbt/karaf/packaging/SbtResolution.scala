@@ -64,14 +64,14 @@ private[packaging] object SbtResolution {
 
   def toLibraryDependencies(features: Set[Feature]): Seq[ModuleID] =
     features.flatMap(_.deps).collect {
-      case b @ Bundle(MavenUrl(url), _, _, _) => toBundleID(url) % "provided"
+      case b @ Bundle(MavenUrl(url), _, _, _, _) => toBundleID(url) % "provided"
     }.toSeq
 
   def selectProjectBundles(ur: UpdateReport, features: Set[Feature]): Set[Bundle] = {
     val mavenUrls = features
       .flatMap(_.deps)
-      .collect { case Bundle(MavenUrl(url), _, _, _) => url }
-    val cr = ur.filter(bundleArtifactFilter).configuration("runtime").get
+      .collect { case Bundle(MavenUrl(url), _, _, _, _) => url }
+    val cr = ur.filter(bundleArtifactFilter).configuration("compile").get
     val inFeatures =
       for {
         mr <- cr.modules

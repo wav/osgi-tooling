@@ -10,7 +10,7 @@ object Resolution {
   def satisfies(constraint: Dependency, feature: Feature): Boolean =
     constraint.name == feature.name && (
       constraint.version.isEmpty || {
-        var vr = constraint.version.get
+        var vr = constraint.version
         !vr.isEmpty() && (feature.version == Version.emptyVersion || vr.includes(feature.version))
       })
 

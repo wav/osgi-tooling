@@ -28,18 +28,18 @@ class FeaturesXmlSuite extends Spec {
       ArtifactUtil.readFeaturesXml(f)
     }
 
-  val jolokia13 = Dependency("jolokia",vJolokia,false,false)
+  val jolokia13 = Dependency("jolokia",vJolokia.versionRange,false,false)
 
   def `should read valid feature files`(): Unit = {
     val Some(d) = getDescriptor("standard")
     val paxRepo = Repository(paxWebUrl)
     assert(d.elems.contains(paxRepo))
-    val jolokia = feature("jolokia",vJolokia,Set(Bundle(jolokiaUrl), Dependency("http",None)))
+    val jolokia = feature("jolokia",vJolokia,Set(Bundle(jolokiaUrl), Dependency("http")))
     val Some(selection) = d.features.find(_.name == "jolokia")
     assert(jolokia.name == selection.name)
     assert(jolokia.version == selection.version)
     assert(jolokia.deps.contains(Bundle(jolokiaUrl)))
-    assert(jolokia.deps.contains(Dependency("http",None)))
+    assert(jolokia.deps.contains(Dependency("http")))
   }
 
   def `should identify feature that is defined but not referenced`(): Unit = {
@@ -70,8 +70,8 @@ class FeaturesXmlSuite extends Spec {
   }
 
   def `features versions and constraints are comparable`(): Unit = {
-    val jolokia13vr = Dependency("jolokia","[1.3,1.4)", false, false)
-    assert(jolokia13 == Dependency("jolokia",vJolokia,false,false))
+    val jolokia13vr = Dependency("jolokia","[1.3,1.4)".versionRange)
+    assert(jolokia13 == Dependency("jolokia",vJolokia.versionRange))
     assert(Resolution.satisfies(jolokia13vr, feature("jolokia", vJolokia)))
     assert(!Resolution.satisfies(jolokia13vr, feature("jolokia", "1.2.0")))
     assert(!Resolution.satisfies(jolokia13vr, feature("jolokia", "1.4.0")))
@@ -80,12 +80,12 @@ class FeaturesXmlSuite extends Spec {
   def `finds all transitive features and bundles`(): Unit = {
     val repositories = repoIDs.keys.flatMap(getDescriptor).toSet
     val jolokiaDeps = Resolution.selectFeatureDeps(jolokia13, repositories.flatMap(_.features))
-    assert(Set(Dependency("http",None,false,false)) == jolokiaDeps)
+    assert(Set(Dependency("http","0.0.0".versionRange)) == jolokiaDeps)
     val result = Resolution.resolveFeatures(Set(jolokia13), repositories.flatMap(_.features))
     assert(result.isRight)
     val Right(rs) = result
     assert(Set("jolokia", "http", "pax-http", "pax-http-jetty", "pax-jetty") == rs.map(_.name))
-    rs.flatMap(_.deps).collect { case Bundle(MavenUrl(url), _, _, _) => url }.foreach(println)
+    rs.flatMap(_.deps).collect { case Bundle(MavenUrl(url), _, _, _, _) => url }.foreach(println)
   }
   
   def makeDescriptor = {
@@ -113,7 +113,7 @@ class FeaturesXmlSuite extends Spec {
     type BundleMod = PartialFunction[FeatureOption, Bundle]
 
     def modBundle(predicate: MavenUrl => Boolean, f: Bundle => Bundle): BundleMod = {
-      case b @ Bundle(MavenUrl(url), _, _, _) if predicate(url) => f(b)
+      case b @ Bundle(MavenUrl(url), _, _, _, _) if predicate(url) => f(b)
     }
 
     val wrapJson = modBundle(url => url.artifactId == "json", b => WrappedBundle(b.url, instructions = Map(

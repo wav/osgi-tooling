@@ -20,12 +20,12 @@ checkDependencyIsWrapped := {
   val f = featuresProjectFeature.value
   import FeaturesXml._
   val found = f.deps.exists {
-    case Bundle(url, _, _, _) => url == "wrap:mvn:org.json/json/20140107"
+    case Bundle(url, _, _, _, _) => url == "wrap:mvn:org.json/json/20140107"
     case _ => false
   }
   if (!found) sys.error(s"Failed to wrap dependency:\n + $f")
   val n = f.deps.count {
-    case Bundle(url, _, _, _) => url.startsWith("wrap:")
+    case Bundle(url, _, _, _, _) => url.startsWith("wrap:")
     case _ => false
   }
   if (n != 1) sys.error(s"Failed to wrap a single dependency:\n + $f")

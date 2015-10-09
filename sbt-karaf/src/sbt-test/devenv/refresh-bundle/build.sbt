@@ -9,7 +9,8 @@ version := "0.1.0.SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
-featuresRequired := Map("wrap" -> "*")
+/* The log feature provides an implementation for the pax-logging-api which implements slf4j-api */
+featuresRequired := Map("wrap" -> "*", "log" -> "*")
 
 osgiSettings
 
@@ -26,9 +27,8 @@ libraryDependencies ++= Seq(
 		"Bundle-SymbolicName" -> "json",
 		"Bundle-Version" -> "20140107"
 	)),
-	"org.slf4j" % "slf4j-api" % "1.7.12",
-	"org.slf4j" % "osgi-over-slf4j" % "1.7.12",
-	"org.osgi" % "org.osgi.core" % "6.0.0",
+	"org.slf4j" % "slf4j-api" % "1.7.12" % "provided",
+	"org.osgi" % "org.osgi.core" % "6.0.0" % "provided",
 	FeatureID("org.apache.karaf.features", "standard", "4.0.1"))
 
 logLevel := Level.Warn

@@ -16,16 +16,28 @@ trait XmlFormat[T] {
 
 }
 
+private[packaging] case class ValueWriter[T](value: T, default: T) {
+  import Util._
+  // if the selected value matches the default return None. An empty string will return None
+  def apply[V](get: T => V, str: V => String = (_: V).toString): Option[String] = {
+    val v = get(value)
+    if (v == get(default)) None
+    else Some(str(v)).nonEmptyString
+  }
+}
+
+private[packaging] case class AttrReader[T](e: Elem, default: T) {
+  import Util._
+  def apply[V](attrName: String, conversion: String => V, getDefault: T => V): V =
+    e.attributes.asAttrMap.get(attrName).nonEmptyString
+      .map(conversion)
+      .getOrElse(getDefault(default))
+}
+
 object FeaturesXmlFormats {
 
-  import Util.setAttrs
+  import Util._
   import FeaturesXml._
-
-  private def opt[T](e: Elem, attr: String, conversion: String => T): Option[T] =
-    e.attributes.asAttrMap.get(attr).map(conversion)
-
-  private def get[T](e: Elem, attr: String, conversion: String => T, default: T): T =
-    opt(e,attr,conversion).getOrElse(default)
 
   object repositoryFormat extends XmlFormat[Repository] {
     def write(r: Repository) =
@@ -38,73 +50,84 @@ object FeaturesXmlFormats {
   object bundleFormat extends XmlFormat[Bundle] {
     def write(b: Bundle) = {
       val url = MavenUrl.unapply(b.url).getOrElse(b.url)
+      val str = ValueWriter(b, emptyBundle)
       Some(setAttrs(<bundle>{url}</bundle>, Map(
-        "dependency" -> Some(b.dependency.toString),
-        "start" -> Some(b.start.toString),
-        "start-level" -> b.`start-level`.map(_.toString)
+        "dependency" -> str(_.dependency),
+        "prerequisite" -> str(_.prerequisite),
+        "start" -> str(_.start),
+        "start-level" -> str(_.`start-level`)
       )))
     }
     val _read: PartialFunction[Elem, Bundle] = {
       case e: Elem if e.label == "bundle" =>
+        val rd = AttrReader(e,emptyBundle)
         Bundle(e.text,
-          get(e, "dependency", _.toBoolean, false),
-          get(e, "start", _.toBoolean, false),
-          opt(e, "start-level", _.toInt))
+          rd("dependency", _.toBoolean, _.dependency),
+          rd("prerequisite", _.toBoolean, _.prerequisite),
+          rd("start", _.toBoolean, _.start),
+          rd("start-level", _.toInt, _.`start-level`))
     }
   }
 
   object dependencyFormat extends XmlFormat[Dependency] {
     def write(d: Dependency) = {
+      val str = ValueWriter(d, emptyDependency)
       Some(setAttrs(<feature>{d.name}</feature>, Map(
-        "version" -> d.version.map(_.toString),
-        "prerequisite" -> Some(d.prerequisite.toString),
-        "dependency" -> Some(d.dependency.toString)
+        "version" -> str(_.version),
+        "prerequisite" -> str(_.prerequisite),
+        "dependency" -> str(_.dependency)
       )))
     }
     val _read: PartialFunction[Elem, Dependency] = {
       case e: Elem if e.label == "feature" =>
+        val rd = AttrReader(e,emptyDependency)
         Dependency(e.text,
-          opt(e, "version", new VersionRange(_)),
-          get(e, "prerequisite", _.toBoolean, true),
-          get(e, "dependency", _.toBoolean, true))
+          rd("version", new VersionRange(_), _.version),
+          rd("prerequisite", _.toBoolean, _.prerequisite),
+          rd("dependency", _.toBoolean, _.dependency))
     }
   }
 
   object configFormat extends XmlFormat[Config] {
     def write(c: Config) = {
+      val str = ValueWriter(c, emptyConfig)
       Some(setAttrs(<config>{c.value}</config>, Map(
         "name" -> Some(c.name),
-        "append" -> Some(c.append.toString)
+        "append" -> str(_.append)
       )))
     }
     val _read: PartialFunction[Elem, Config] = {
       case e: Elem if e.label == "config" =>
+        val rd = AttrReader(e,emptyConfig)
         Config(
-          get(e, "name", identity, null),
+          rd("name", identity, _.name),
           e.text,
-          get(e, "append", _.toBoolean, true))
+          rd("append", _.toBoolean, _.append))
     }
   }
 
   object configFileFormat extends XmlFormat[ConfigFile] {
     def write(cf: ConfigFile) = {
+      val str = ValueWriter(cf, emptyConfigFile)
       Some(setAttrs(<configfile>{cf.value}</configfile>, Map(
         "finalname" -> Some(cf.finalname),
-        "overrideValue" -> Some(cf.overrideValue.toString)
+        "override" -> str(_.`override`)
       )))
     }
     val _read: PartialFunction[Elem, ConfigFile] = {
       case e: Elem if e.label == "configfile" =>
+        val rd = AttrReader(e,emptyConfigFile)
         ConfigFile(
-          get(e, "finalname", identity, null),
+          rd("finalname", identity, _.finalname),
           e.text,
-          get(e, "overrideValue", _.toBoolean, true))
+          rd("override", _.toBoolean, _.`override`))
     }
   }
 
   object featureFormat extends XmlFormat[Feature] {
 
     def write(f: Feature) = {
+      val str = ValueWriter(f, emptyFeature)
       Some(setAttrs(<feature>{
         f.deps.collect {
           case d: Dependency => dependencyFormat.write(d)
@@ -113,9 +136,9 @@ object FeaturesXmlFormats {
         }.flatten
         }</feature>, Map(
         "name" -> Some(f.name),
-        "version" -> Some(f.version.toString),
-        "description" -> f.description)
-      ))
+        "version" -> str(_.version),
+        "description" -> str(_.description)
+      )))
     }
 
     def _readDep(e: Elem): Option[FeatureOption] =
@@ -127,11 +150,12 @@ object FeaturesXmlFormats {
 
     val _read: PartialFunction[Elem, Feature] = {
       case e: Elem if e.label == "feature" =>
+        val rd = AttrReader(e,emptyFeature)
         Feature(
-          get(e, "name", identity, null),
-          get(e, "version", Version.parseVersion, Version.emptyVersion),
+          rd("name", identity, _.name),
+          rd("version", Version.parseVersion, _.version),
           e.child.collect { case e: Elem => _readDep(e) }.flatten.toSet,
-          opt(e, "description", identity))
+          rd("description", identity, _.description))
     }
 
   }
@@ -158,8 +182,9 @@ object FeaturesXmlFormats {
 
     val _read: PartialFunction[Elem, FeaturesXml] = {
       case e: Elem if e.label == "features" =>
+        val rd = AttrReader(e,emptyFeaturesXml)
         FeaturesXml(
-          get(e, "name", identity, null),
+          rd("name", identity, _.name),
           e.child.collect { case e: Elem => _readDep(e) }.flatten)
     }
   }
