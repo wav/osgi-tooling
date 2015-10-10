@@ -18,12 +18,18 @@ import KarafPackagingKeys._
 
 enablePlugins(SbtKarafPackaging)
 
-featuresRequired := Map("jolokia" -> "1.3.0", "scr" -> "*")
+featuresRequired := Map(
+	"wrap" -> "*" /* enable provisioning of wrapped bundles */, 
+	"log" -> "*" /* implements slf4j */)
 
 libraryDependencies ++= Seq(
-  "org.slf4j" % "osgi-over-slf4j" % "1.7.10",
-  FeatureID("org.apache.karaf.features", "standard", "4.0.0"),
-  FeatureID("org.ops4j.pax.web", "pax-web-features", "4.1.4"))
+	"org.json" % "json" % "20140107" toWrappedBundle(Map(
+		"Bundle-SymbolicName" -> "json",
+		"Bundle-Version" -> "20140107"
+	)),
+	"org.slf4j" % "slf4j-api" % "1.7.12" % "provided",
+	"org.osgi" % "org.osgi.core" % "6.0.0" % "provided",
+	FeatureID("org.apache.karaf.features", "standard", "4.0.1"))
 ```
 
 When you run the generate features.xml task:
@@ -40,13 +46,13 @@ A features file like the following will be generated:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="my-project">
-  <repository>mvn:org.apache.karaf.features/standard/4.0.0/xml/features</repository>
+  <repository>mvn:org.apache.karaf.features/standard/4.0.1/xml/features</repository>
   <feature version="0.1.0.SNAPSHOT" name="my-project">
-    <feature>scr</feature>
+    <feature dependency="true" prerequisite="true">log</feature>
     <bundle>mvn:org.scala-lang/scala-library/2.10.5/jar</bundle>
+    <bundle>wrap:mvn:org.json/json/20140107$Bundle-SymbolicName=json&amp;Bundle-Version=20140107</bundle>
     <bundle>file:/{baseDir}/target/scala-2.10/my-project.10-0.1.0.SNAPSHOT.jar</bundle>
-    <feature version="1.3.0">jolokia</feature>
-    <bundle>mvn:org.slf4j/osgi-over-slf4j-1.7.10/1.7.10/bundle</bundle>
+    <feature dependency="true" prerequisite="true">wrap</feature>
   </feature>
 </features>
 ```
@@ -87,14 +93,9 @@ lazy val root = project.in(file("."))
 > BYO features file
 > `featuresFile := Some((resourceDirectory in Compile).value / "features.xml")`
 
-> Add the dependencies of `featuresRequired` to `libraryDepencencies`. See settings for more info.
-> `KarafPackagingKeys.featuresAddDependencies := true`
-
 #### TODO
 
-- Add bundles from non `mvn:` style urls to project feature
 - Report on bundles that cannot be added to the project feature with a suggestion
 - Generate a different feature file based on configurations so that bundle URL's aren't pointing to the local file system.
         Eg. do `<bundle>file://...</bundle>` and `<bundle>mvn:...</bundle>`
         Work around: override the setting `featuresProjectBundle`
-- Create a KAR

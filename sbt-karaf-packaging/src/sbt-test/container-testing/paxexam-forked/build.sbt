@@ -33,7 +33,7 @@ val vPaxExam = "4.6.0"
 
 libraryDependencies ++=
   Seq(
-    "org.osgi" % "org.osgi.core" % "6.0.0",
+    "org.osgi" % "org.osgi.core" % "6.0.0" % "provided",
     FeatureID("org.apache.karaf.features", "standard", "4.0.1"),
 
     "org.ops4j.pax.exam" % "pax-exam" % vPaxExam % "test",

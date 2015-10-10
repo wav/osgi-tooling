@@ -15,9 +15,7 @@ object KarafPackagingKeys {
   lazy val featuresSelected        = taskKey[Either[Set[Dependency], Set[Feature]]]("Resolved features or unsatisfied feature constraints")
   lazy val featuresProjectBundle   = taskKey[Bundle]("The project bundle to add to the project feature")
   lazy val featuresProjectFeature  = taskKey[Feature]("The project feature to add to features.xml")
-  lazy val featuresAddDependencies = settingKey[Boolean](
-    s"""Add bundles in feature repositories.
-       |Warning: Attempts to download feature descriptors before the project is loading.""".stripMargin)
+  lazy val featuresAddDependencies = settingKey[Boolean]("EXPERIMENTAL: Add the dependencies of the resolved `featuresRequired` setting to `libraryDependencies`")
 
   /**
    * Usage hint: makes the use of `.versionAsInProject()` available in pax-exam tests

@@ -16,9 +16,16 @@ private [devtools] object ArtifactUtil {
 
   def isValidFeaturesXml(file: File): Boolean =
     if (!file.exists()) false
-    else Try(Util.validateXml(file.getCanonicalPath, getClass.getResourceAsStream("/" + FeaturesXmlFormats.featuresXsd))) match {
-      case Failure(ex) => println(ex); false
-      case Success(_) => true
+    else {
+      val xsds = FeaturesXmlFormats.featuresSchemas.map(_._2._2)
+      var result: Try[Unit] = Failure(new IllegalArgumentException("xsds must be non empty"))
+      for (i <- 0 to xsds.size) {
+        result = Try(Util.validateXml(file.getCanonicalPath, getClass.getResourceAsStream("/" + xsds(i))))
+        if (result.isSuccess) return true
+      }
+      val Failure(ex) = result
+      println(ex)
+      false
     }
 
   def readFeaturesXml(file: File): Option[FeaturesXml] =

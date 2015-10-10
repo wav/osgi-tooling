@@ -17,12 +17,13 @@ class FeaturesXmlSuite extends Spec {
   val repoIDs = Map[String, String](
     "standard" -> s"/standard-$vKaraf-features.xml",
     "enterprise" -> s"/enterprise-$vKaraf-features.xml",
-    "pax-web" -> "/pax-web-features-4.2.0-features.xml"
+    "pax-web" -> "/pax-web-features-4.2.0-features.xml",
+    "apache-camel" -> "/apache-camel-2.16.0-features.xml"
   )
 
   def getDescriptor(s: String): Option[FeaturesXml] =
     repoIDs.get(s).flatMap { path =>
-      val xml = io.Source.fromInputStream(getClass.getResourceAsStream(path)).getLines.mkString
+      val xml = io.Source.fromInputStream(getClass.getResourceAsStream(path)).getLines.mkString("\n")
       val f = new File(FileUtils.getTempDirectory, path)
       FileUtils.writeStringToFile(f, xml)
       ArtifactUtil.readFeaturesXml(f)
@@ -40,6 +41,11 @@ class FeaturesXmlSuite extends Spec {
     assert(jolokia.version == selection.version)
     assert(jolokia.deps.contains(Bundle(jolokiaUrl)))
     assert(jolokia.deps.contains(Dependency("http")))
+  }
+
+  def `should read an older features file`(): Unit = {
+    val Some(d) = getDescriptor("apache-camel")
+    val Some(selection) = d.features.find(_.name == "camel-weather")
   }
 
   def `should identify feature that is defined but not referenced`(): Unit = {

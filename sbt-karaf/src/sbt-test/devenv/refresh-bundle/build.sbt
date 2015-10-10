@@ -9,8 +9,9 @@ version := "0.1.0.SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
-/* The log feature provides an implementation for the pax-logging-api which implements slf4j-api */
-featuresRequired := Map("wrap" -> "*", "log" -> "*")
+featuresRequired := Map(
+	"wrap" -> "*" /* enable provisioning of wrapped bundles */, 
+	"log" -> "*" /* implements slf4j */)
 
 osgiSettings
 

@@ -190,11 +190,12 @@ object FeaturesXmlFormats {
   }
 
   val featuresSchemas =
-    Seq("1.3.0")
+    Seq(
+      "1.3.0", /* is a super set of 1.2.0 */
+      "1.2.0")
       .map(v => v -> (s"http://karaf.apache.org/xmlns/features/v$v" -> s"org/apache/karaf/features/karaf-features-$v.xsd"))
-      .toMap
 
-  val (featuresXsdUrl, featuresXsd) = featuresSchemas("1.3.0")
+  val (featuresXsdUrl, featuresXsd) = featuresSchemas.head._2
 
   def makeFeaturesXml[N <: scala.xml.Node](featuresXml: FeaturesXml): Elem =
     featuresFormat.write(featuresXml).get

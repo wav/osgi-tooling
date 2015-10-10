@@ -20,6 +20,7 @@ object Dependencies {
 
     // when this is changed, update the the sbt-karaf-packaging tests
     lazy val testFeatures = Seq(
+      featureID("org.apache.camel.karaf", "apache-camel", "2.16.0"),
       featureID("org.apache.karaf.features", "standard", Version),
       featureID("org.apache.karaf.features", "enterprise", Version),
       featureID("org.ops4j.pax.web", "pax-web-features", "4.2.0")).map(_ % "test")
