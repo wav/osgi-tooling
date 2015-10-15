@@ -41,8 +41,6 @@ When you run the generate features.xml task:
 
 A features file like the following will be generated:
 
-`{baseDir}/target/scala-2.10/features.xml`
-
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="my-project">
@@ -56,6 +54,14 @@ A features file like the following will be generated:
   </feature>
 </features>
 ```
+
+### How it works.
+
+1. The plugin will download all feature repositories/descriptors defined in `libraryDependencies`.
+2. It will then collect all bundles defined by the `featuresRequired` and put those bundles in the provided scope if
+   the setting `featuresAddDependencies := true`
+3. All bundles in the compile scope and feature dependencies defined by `featuresRequired` will be added to a
+   "project feature" in the `featuresProjectFeature` setting.
 
 ### Modifying the features file
 

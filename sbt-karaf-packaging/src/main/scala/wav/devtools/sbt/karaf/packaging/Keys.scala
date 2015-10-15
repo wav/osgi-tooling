@@ -38,16 +38,10 @@ object SbtKarafPackaging extends AutoPlugin {
       KarafPackagingDefaults.featuresSettings ++
         KarafPackagingDefaults.karafDistributionSettings
 
-    def addDependenciesInFeaturesRepositoriesSettings: Seq[Setting[_]] =
-      Seq(onLoad in Global ~= (Internal.addDependenciesInFeaturesRepositories compose _))
-
   }
 
   override def requires =
     sbt.plugins.MavenResolverPlugin
-
-  override def globalSettings =
-    autoImport.addDependenciesInFeaturesRepositoriesSettings
 
   override def projectSettings =
     autoImport.defaultKarafPackagingSettings

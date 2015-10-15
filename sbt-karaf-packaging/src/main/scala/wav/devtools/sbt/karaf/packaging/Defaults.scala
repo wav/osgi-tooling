@@ -3,7 +3,7 @@ package wav.devtools.sbt.karaf.packaging
 import sbt.Keys._
 import sbt._
 import wav.devtools.karaf.packaging.FeaturesXml._
-import wav.devtools.karaf.packaging.{FeaturesXml, FeaturesXmlFormats, KarafDistribution}
+import wav.devtools.karaf.packaging.{MavenUrl, FeaturesXml, FeaturesXmlFormats, KarafDistribution}
 import wav.devtools.sbt.karaf.packaging
 
 object KarafPackagingDefaults {
@@ -133,8 +133,26 @@ object KarafPackagingDefaults {
       karafSourceDistribution := karafSourceDistributionTask.value,
       unpackKarafDistribution := unpackKarafDistributionTask.value)
 
+  lazy val featureDependencies = Def.task {
+    if (featuresAddDependencies.value) {
+      val constraints = featuresRequired.value.map(toDep).toSet
+      val logger = streams.value.log
+      val download = (url: MavenUrl) => Ivy.
+        downloadMavenArtifact(url, externalResolvers.value, ivySbt.value, logger, updateOptions.value)
+      val resolve = (m: ModuleID) => SbtResolution.downloadFeaturesRepository(logger, download, m)
+      val results = libraryDependencies.value.map(resolve)
+      val failures = results.collect { case Left(e) => e }
+      failures.foreach(logger.error(_))
+      if (failures.nonEmpty)
+        sys.error("Could not resolve all features repositories.")
+      val repos = results.collect { case Right(frs) => frs }.flatten.toSet
+      val result = Resolution.resolveFeatures(constraints, repos.flatMap(_.featuresXml.features))
+      val resolved = Resolution.mustResolveFeatures(result)
+      SbtResolution.toLibraryDependencies(resolved)
+    } else Seq.empty
+  }
+
   lazy val featuresSettings: Seq[Setting[_]] =
-      Internal.settings ++
       Seq(
         featuresXml := featuresXmlTask.value,
         featuresFile := Some(featuresFileTask.value),
@@ -146,6 +164,7 @@ object KarafPackagingDefaults {
         featuresProjectFeature := featuresProjectFeatureTask.value,
         packagedArtifacts <<= featuresPackagedArtifactsTask,
         featuresAddDependencies := false,
+        allDependencies ++= featureDependencies.value,
         shouldGenerateDependsFile := false,
         resourceGenerators in Compile <+= generateDependsFileTask)
 
