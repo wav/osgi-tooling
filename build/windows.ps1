@@ -8,7 +8,7 @@ if ( -not (Test-Path -PathType Container -Path .git ) ) {
 . build\util.ps1
 
 if ( -not (Test-Path -PathType Container -Path "karaf.zip" ) ) {
-    mvnGet "org.apache.karaf:apache-karaf-minimal:4.0.1:zip" "karaf.zip"
+    mvnGet "org.apache.karaf:apache-karaf-minimal:4.0.2:zip" "karaf.zip"
 }
 
 unzipToOutputDir "$pwd/karaf.zip" "$pwd/karaf"

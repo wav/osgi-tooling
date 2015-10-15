@@ -9,7 +9,7 @@ import FeaturesXml._
 class FeaturesXmlSuite extends Spec {
 
   val vKaraf = sys.props("karaf.version")
-  val vPaxWeb = "4.2.0"
+  val vPaxWeb = sys.props("paxweb.version")
   val vJolokia = "1.3.0"
   val jolokiaUrl = s"mvn:org.jolokia/jolokia-osgi/$vJolokia"
   val paxWebUrl = s"mvn:org.ops4j.pax.web/pax-web-features/$vPaxWeb/xml/features"
@@ -17,7 +17,7 @@ class FeaturesXmlSuite extends Spec {
   val repoIDs = Map[String, String](
     "standard" -> s"/standard-$vKaraf-features.xml",
     "enterprise" -> s"/enterprise-$vKaraf-features.xml",
-    "pax-web" -> "/pax-web-features-4.2.0-features.xml",
+    "pax-web" -> s"/pax-web-features-$vPaxWeb-features.xml",
     "apache-camel" -> "/apache-camel-2.16.0-features.xml"
   )
 

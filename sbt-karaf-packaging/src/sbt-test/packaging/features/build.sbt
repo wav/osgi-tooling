@@ -10,7 +10,7 @@ featuresRequired := Map("jolokia" -> "1.3.0", "scr" -> "*", "wrap" -> "*")
 libraryDependencies ++=
   Seq(
     "org.slf4j" % "osgi-over-slf4j" % "1.7.10",
-    FeatureID("org.apache.karaf.features", "standard", "4.0.1"),
+    FeatureID("org.apache.karaf.features", "standard", "4.0.2"),
     FeatureID("org.ops4j.pax.web", "pax-web-features", "4.1.4"))
 
 lazy val checkJolokiaIsAvailable = taskKey[Unit]("Tests if the jolokia feature was resolved")

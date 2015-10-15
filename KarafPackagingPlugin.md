@@ -29,7 +29,7 @@ libraryDependencies ++= Seq(
 	)),
 	"org.slf4j" % "slf4j-api" % "1.7.12" % "provided",
 	"org.osgi" % "org.osgi.core" % "6.0.0" % "provided",
-	FeatureID("org.apache.karaf.features", "standard", "4.0.1"))
+	FeatureID("org.apache.karaf.features", "standard", "4.0.2"))
 ```
 
 When you run the generate features.xml task:
@@ -44,7 +44,7 @@ A features file like the following will be generated:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="my-project">
-  <repository>mvn:org.apache.karaf.features/standard/4.0.1/xml/features</repository>
+  <repository>mvn:org.apache.karaf.features/standard/4.0.2/xml/features</repository>
   <feature version="0.1.0.SNAPSHOT" name="my-project">
     <feature dependency="true" prerequisite="true">log</feature>
     <bundle>mvn:org.scala-lang/scala-library/2.10.5/jar</bundle>

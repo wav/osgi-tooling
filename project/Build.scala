@@ -34,7 +34,9 @@ object OsgiToolingBuild extends Build {
         } yield f).toSet.toSeq
       },
       testOptions in Test +=
-        Tests.Setup(() => sys.props += "karaf.version" -> Karaf.Version))
+        Tests.Setup(() => sys.props ++ Seq(
+          "karaf.version" ->  Karaf.Version,
+          "paxweb.version" -> Karaf.PaxWebVersion)))
 
   lazy val `karaf-manager` = project
     .dependsOn(`karaf-packaging`)
@@ -63,7 +65,7 @@ object OsgiToolingBuild extends Build {
     publishArtifact in Compile := true,
     publishArtifact in Test := false,
     scalaVersion := "2.10.5",
-    libraryDependencies += scalaTest,
+    libraryDependencies ++= Seq(slf4jSimple, scalaTest),
     scalacOptions in ThisBuild ++= Seq(
       "-deprecation", 
       "-feature", 

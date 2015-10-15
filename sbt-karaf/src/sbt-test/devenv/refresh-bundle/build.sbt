@@ -30,6 +30,6 @@ libraryDependencies ++= Seq(
 	)),
 	"org.slf4j" % "slf4j-api" % "1.7.12" % "provided",
 	"org.osgi" % "org.osgi.core" % "6.0.0" % "provided",
-	FeatureID("org.apache.karaf.features", "standard", "4.0.1"))
+	FeatureID("org.apache.karaf.features", "standard", "4.0.2"))
 
 logLevel := Level.Warn

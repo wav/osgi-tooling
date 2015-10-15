@@ -1,4 +1,4 @@
-FROM wav/karaf-minimal:4.0.1
+FROM wav/karaf-minimal:4.0.2
 
 ENV SECRETS /secrets
 

@@ -6,7 +6,7 @@ Some tooling for OSGi in Scala.
 
 This is an experiment, things are very likely to change. Further work on this is not planned.
 
-Tested with Karaf 4.0.1 on OS X. Should work on windows.
+Tested with Karaf 4.0.2 on OS X. Should work on windows.
 
 |         | Status   |
 |---------|:--------:|
@@ -40,3 +40,7 @@ def sbtKaraf = ProjectRef(
 	uri("git://github.com/wav/osgi-tooling.git#e390f0b948586e2ea3e6d18b2b44dd5be3669508"),
 	"sbt-karaf")
 ```
+
+### Troubleshooting
+
+When using an updated version of the plugin, you may need to clear the cached plugin. You can see how this done in `./clean.sh`. Failure to do so may cause your IDE to hang or dependencies that the plugin depends on may not be resolved. 

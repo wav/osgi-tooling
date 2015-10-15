@@ -12,7 +12,7 @@ featuresAddDependencies := true
 libraryDependencies ++= Seq(
   "org.json" % "json" % "20140107",
   "org.slf4j" % "osgi-over-slf4j" % "1.7.10",
-  FeatureID("org.apache.karaf.features", "standard", "4.0.1"))
+  FeatureID("org.apache.karaf.features", "standard", "4.0.2"))
 
 lazy val checkDependencyIsWrapped = taskKey[Unit]("Tests to see if the bundle definition uses the wrap protocol for a non-osgi dependency")
 
