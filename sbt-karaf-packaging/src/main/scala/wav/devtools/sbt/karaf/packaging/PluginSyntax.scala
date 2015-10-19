@@ -10,9 +10,11 @@ trait PluginSyntax {
   def FeatureID(o: String, n: String, v: String, a: Option[String] = None): ModuleID =
     ModuleID(o, n, v, explicitArtifacts = Seq(Artifact(a getOrElse n, "xml", "xml", "features")))
 
-  def feature(name: String, version: String = "*", dependency: Boolean = false, prerequisite: Boolean = false): Dependency =
+  def feature(name: String, version: String = "*", prerequisite: Boolean = false, dependency: Boolean = false): Dependency =
     Try(version.versionRange) match {
-      case Success(vr) => Dependency(name, vr, dependency, prerequisite)
+      case Success(vr) => Dependency(name, vr,
+        dependency = dependency,
+        prerequisite = prerequisite)
       case Failure(ex) =>
         sys.error(s"The referenced feature ${name} does not have a valid version identifier: " + ex.getMessage)
         ???

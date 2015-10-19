@@ -19,8 +19,10 @@ import KarafPackagingKeys._
 enablePlugins(SbtKarafPackaging)
 
 featuresRequired := Set(
-  feature("wrap") /* enable provisioning of wrapped bundles */, 
-  feature("log") /* implements slf4j */)
+    feature("wrap", /* enable provisioning of wrapped bundles */
+        dependency = true, 
+        prerequisite = true),
+	 feature("log") /* implements slf4j */)
 
 libraryDependencies ++= Seq(
 	"org.json" % "json" % "20140107" toWrappedBundle(Map(
@@ -46,11 +48,11 @@ A features file like the following will be generated:
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="my-project">
   <repository>mvn:org.apache.karaf.features/standard/4.0.2/xml/features</repository>
   <feature version="0.1.0.SNAPSHOT" name="my-project">
-    <feature dependency="true" prerequisite="true">log</feature>
+    <feature>log</feature>
     <bundle>mvn:org.scala-lang/scala-library/2.10.5/jar</bundle>
     <bundle>wrap:mvn:org.json/json/20140107$Bundle-SymbolicName=json&amp;Bundle-Version=20140107</bundle>
     <bundle>file:/{baseDir}/target/scala-2.10/my-project.10-0.1.0.SNAPSHOT.jar</bundle>
-    <feature dependency="true" prerequisite="true">wrap</feature>
+    <feature prerequisite="true" dependency="true">wrap</feature>
   </feature>
 </features>
 ```

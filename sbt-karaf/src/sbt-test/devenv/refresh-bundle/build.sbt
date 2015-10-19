@@ -10,8 +10,10 @@ version := "0.1.0.SNAPSHOT"
 scalaVersion := "2.11.7"
 
 featuresRequired := Set(
-	feature("wrap", dependency = true) /* enable provisioning of wrapped bundles */,
-	feature("log") /* implements slf4j */,
+    feature("wrap", /* enable provisioning of wrapped bundles */
+        dependency = true, 
+        prerequisite = true),
+    feature("log") /* implements slf4j */,
     feature("camel-blueprint"),
     feature("aries-blueprint"))
 

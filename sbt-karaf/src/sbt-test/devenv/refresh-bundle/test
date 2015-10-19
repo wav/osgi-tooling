@@ -1,7 +1,9 @@
+> show featuresXml
 > karafStartServer
 > karafUpdateBundle
 > karafUpdateBundle
 > karafResetServer
+$ sleep 3000
 > karafUpdateBundle
 > karafUndeployFeature
 > karafStopServer

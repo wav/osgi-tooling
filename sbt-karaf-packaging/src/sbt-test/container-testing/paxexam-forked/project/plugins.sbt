@@ -4,7 +4,9 @@ libraryDependencies += "wav.devtools" %% "karaf-packaging" % V
 
 addSbtPlugin("wav.devtools" % "sbt-karaf-packaging" % V)
 
-lazy val plugins = (project in file("."))
-  .dependsOn(sbtOsgi)
+//lazy val plugins = (project in file("."))
+//  .dependsOn(sbtOsgi)
+//
+//def sbtOsgi = uri("git://github.com/sbt/sbt-osgi.git")
 
-def sbtOsgi = uri("git://github.com/sbt/sbt-osgi.git")
+addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.8.0")
