@@ -18,9 +18,9 @@ import KarafPackagingKeys._
 
 enablePlugins(SbtKarafPackaging)
 
-featuresRequired := Map(
-	"wrap" -> "*" /* enable provisioning of wrapped bundles */, 
-	"log" -> "*" /* implements slf4j */)
+featuresRequired := Set(
+  feature("wrap") /* enable provisioning of wrapped bundles */, 
+  feature("log") /* implements slf4j */)
 
 libraryDependencies ++= Seq(
 	"org.json" % "json" % "20140107" toWrappedBundle(Map(

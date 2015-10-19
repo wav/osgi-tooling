@@ -5,7 +5,7 @@ enablePlugins(SbtKarafPackaging)
 
 version := "0.1.0.SNAPSHOT"
 
-featuresRequired := Map("system" -> "*")
+featuresRequired += feature("system")
 
 featuresAddDependencies := true
 

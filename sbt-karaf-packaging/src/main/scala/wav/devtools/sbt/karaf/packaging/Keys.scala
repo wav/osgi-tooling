@@ -10,7 +10,7 @@ object KarafPackagingKeys {
 
   lazy val featuresXml             = taskKey[FeaturesXml]("The project's features repository")
   lazy val featuresFile            = taskKey[Option[File]]("Generate features.xml")
-  lazy val featuresRequired        = settingKey[Map[String, String]]("Features that will be put in the project feature")
+  lazy val featuresRequired        = settingKey[Set[Dependency]]("Features that will be put in the project feature")
   lazy val featuresRepositories    = taskKey[Set[Repository]]("Repositories where `featuresRequired` are specified")
   lazy val featuresSelected        = taskKey[Either[Set[Dependency], Set[Feature]]]("Resolved features or unsatisfied feature constraints")
   lazy val featuresProjectBundle   = taskKey[Bundle]("The project bundle to add to the project feature")

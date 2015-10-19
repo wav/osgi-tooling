@@ -2,6 +2,8 @@
 
 cd /root/input # pwd is always /input, is this a bug in docker 1.8.1? even when WORKDIR /root/input if set.
 
+./clean.sh
+
 # `build.commands` is list of sbt commands to be run
 commands=\;`cat build.commands | sed '/^-/d' | tr '\n' ';'`
 commands=${commands%;}

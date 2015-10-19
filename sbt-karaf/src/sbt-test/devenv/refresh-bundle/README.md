@@ -11,6 +11,13 @@ This project serves as a test for the following workflow:
 - Undeploy the feature. `karafUndeployFeature`
 - Reset the karaf server when everything is falling to pieces. `karafResetServer` 
 
+## What's included
+
+1 bundle with 2 "services", each print messages to the log, they are:
+
+- A Printer service that starts with the Bundle Activator and prints json objects.
+- A blueprint service that prints messages on an interval defined by a camel timer.
+
 ## User Experience
 
 When using the `karafUpdateBundle` task, you should see the **karaf shell** update like so:
@@ -51,4 +58,6 @@ In the **karaf logging console** you should see messages like this when it's act
 2015-09-24 23:54:11,519 | INFO | Thread-11 | PrinterService | 35 - default.refresh.bundle - 0.1.0.SNAPSHOT | {"controller notification":"alive"}
 2015-09-24 23:54:11,557 | INFO | Thread-13 | PrinterService | 35 - default.refresh.bundle - 0.1.0.SNAPSHOT | {"controller event":"resumed"}
 2015-09-24 23:54:11,557 | INFO | Thread-13 | PrinterService | 35 - default.refresh.bundle - 0.1.0.SNAPSHOT | {"controller notification":"alive"}
+2015-10-19 20:14:04,830 | INFO | ...       | Blueprint...   | 48 - org.apache.camel.camel-core - 2.16.0 | Apache Camel 2.16.0 (CamelContext: camel-2) started in 0.103 seconds
+2015-10-19 20:14:05,849 | INFO | timer://test | test        | 48 - org.apache.camel.camel-core - 2.16.0 | Exchange[ExchangePattern: InOnly, BodyType: null, Body: [Body is null]]
 ```

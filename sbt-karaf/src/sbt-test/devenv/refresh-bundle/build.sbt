@@ -9,9 +9,11 @@ version := "0.1.0.SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
-featuresRequired := Map(
-	"wrap" -> "*" /* enable provisioning of wrapped bundles */, 
-	"log" -> "*" /* implements slf4j */)
+featuresRequired := Set(
+	feature("wrap", dependency = true) /* enable provisioning of wrapped bundles */,
+	feature("log") /* implements slf4j */,
+    feature("camel-blueprint"),
+    feature("aries-blueprint"))
 
 osgiSettings
 
@@ -30,6 +32,7 @@ libraryDependencies ++= Seq(
 	)),
 	"org.slf4j" % "slf4j-api" % "1.7.12" % "provided",
 	"org.osgi" % "org.osgi.core" % "6.0.0" % "provided",
+	FeatureID("org.apache.camel.karaf", "apache-camel", "2.16.0"),
 	FeatureID("org.apache.karaf.features", "standard", "4.0.2"))
 
 logLevel := Level.Warn

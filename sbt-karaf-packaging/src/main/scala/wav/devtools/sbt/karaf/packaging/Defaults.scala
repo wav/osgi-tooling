@@ -30,7 +30,7 @@ object KarafPackagingDefaults {
   }
 
   lazy val featuresRepositoriesTask = Def.task {
-    val constraints = featuresRequired.value.map(toDep).toSet
+    val constraints = featuresRequired.value
     val repos = allFeaturesRepositories.value
     for {
       fr <- repos
@@ -41,9 +41,8 @@ object KarafPackagingDefaults {
   }
 
   lazy val featuresSelectedTask = Def.task {
-    val constraints = featuresRequired.value.map(toDep).toSet
     val repos = allFeaturesRepositories.value
-    Resolution.resolveFeatures(constraints, repos.flatMap(_.featuresXml.features))
+    Resolution.resolveFeatures(featuresRequired.value, repos.flatMap(_.featuresXml.features))
   }
 
   lazy val featuresProjectBundleTask = Def.task {
@@ -52,11 +51,10 @@ object KarafPackagingDefaults {
   }
 
   lazy val featuresProjectFeatureTask = Def.task {
-    val features = featuresRequired.value.map(toDep)
     val selected = featuresSelected.value
     val resolved = Resolution.mustResolveFeatures(selected)
     val bundles = SbtResolution.selectProjectBundles(update.value, resolved) + featuresProjectBundle.value
-    feature(name.value, version.value, bundles ++ features)
+    feature(name.value, version.value, bundles ++ featuresRequired.value)
       .copy(description = description.value)
   }
 
@@ -135,7 +133,6 @@ object KarafPackagingDefaults {
 
   lazy val featureDependencies = Def.task {
     if (featuresAddDependencies.value) {
-      val constraints = featuresRequired.value.map(toDep).toSet
       val logger = streams.value.log
       val download = (url: MavenUrl) => Ivy.
         downloadMavenArtifact(url, externalResolvers.value, ivySbt.value, logger, updateOptions.value)
@@ -146,7 +143,7 @@ object KarafPackagingDefaults {
       if (failures.nonEmpty)
         sys.error("Could not resolve all features repositories.")
       val repos = results.collect { case Right(frs) => frs }.flatten.toSet
-      val result = Resolution.resolveFeatures(constraints, repos.flatMap(_.featuresXml.features))
+      val result = Resolution.resolveFeatures(featuresRequired.value, repos.flatMap(_.featuresXml.features))
       val resolved = Resolution.mustResolveFeatures(result)
       SbtResolution.toLibraryDependencies(resolved)
     } else Seq.empty
@@ -156,7 +153,7 @@ object KarafPackagingDefaults {
       Seq(
         featuresXml := featuresXmlTask.value,
         featuresFile := Some(featuresFileTask.value),
-        featuresRequired := Map.empty,
+        featuresRequired := Set.empty,
         featuresRepositories := featuresRepositoriesTask.value,
         allFeaturesRepositories := allFeaturesRepositoriesTask.value,
         featuresSelected := featuresSelectedTask.value,
