@@ -7,12 +7,19 @@ import scala.xml.XML
 
 private [devtools] object ArtifactUtil {
 
-  def getSymbolicName(file: File): Option[String] =
-    Option(
-      Util.getJarManifest(file)
-        .getMainAttributes
-        .getValue("Bundle-SymbolicName")
-    ).filterNot(_.isEmpty)
+  def getSymbolicName(file: File): Option[String] = {
+    if (file==null) None else {
+      val mf = Util.getJarManifest(file)
+      if (mf==null) None else
+      if (mf.getMainAttributes==null) None
+      else {
+        val sym = mf.getMainAttributes.getValue("Bundle-SymbolicName")
+        if (sym==null) None else {
+          Some(sym).filterNot(_.isEmpty)
+        }
+      }
+    }
+  }
 
   def isValidFeaturesXml(file: File): Boolean =
     if (!file.exists()) false
