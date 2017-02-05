@@ -104,8 +104,20 @@ object FeaturesXml {
 
   val emptyConditional = Conditional(null, Set.empty)
 
-  def feature(name: String, version: String, deps: Set[FeatureOption] = Set.empty): Feature =
-    Feature(name, Version.parseVersion(version), deps)
+  def feature(name: String, version: String, deps: Set[FeatureOption] = Set.empty): Feature = {
+    val versionResult: Version = {
+      var v: Version = null
+      try { v = Version.parseVersion(version) } catch {
+        case ex: IllegalArgumentException => {
+          val newVersion = version.replaceAll("[^0-9^.]","")
+          println(s"Exception: Version for $name and $version changed to $newVersion so that it will parse correctly with Version.parseVersion")
+          v = Version.parseVersion(newVersion)
+        }
+      }
+      v
+    }
+    Feature(name, versionResult, deps)
+  }
 
   private[packaging] val emptyFeaturesXml = FeaturesXml(null, Seq.empty)
 

@@ -57,7 +57,7 @@ object OsgiToolingBuild extends Build {
 
   val commonSettings = Seq(
     organization in ThisBuild := "wav.devtools",
-    version := "0.1.0.SNAPSHOT",
+    version := "0.1.3.PHILIP",
     publishLocalConfiguration ~= { conf =>
       new PublishConfiguration(conf.ivyFile, conf.resolverName, conf.artifacts, conf.checksums, conf.logging, true)
     },
