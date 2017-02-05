@@ -109,7 +109,9 @@ object FeaturesXml {
       var v: Version = null
       try { v = Version.parseVersion(version) } catch {
         case ex: IllegalArgumentException => {
-          v = Version.parseVersion(version.replaceAll("[^0-9^.]",""))
+          val newVersion = version.replaceAll("[^0-9^.]","")
+          println(s"Exception: Version for $name and $version changed to $newVersion so that it will parse correctly with Version.parseVersion")
+          v = Version.parseVersion(newVersion)
         }
       }
       v
